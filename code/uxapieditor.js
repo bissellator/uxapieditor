@@ -1,3 +1,4 @@
+
 function returnObj(path) {
   if (typeof(window.sessionStorage.token) != 'undefined') {
     var obj = $.ajax({
@@ -51,8 +52,9 @@ function listObjects(path, listOptions, format) {
   var msg = ""
   if (typeof(format) == 'undefined') {format = 'list'}
   if (typeof(listOptions) == 'undefined' || typeof(path) =='undefined' || typeof(listOptions) != 'object') {
-   var refObj = getRef(path)
-   msg = msg + `<p><B>Usage:</b> listObjects(path, listOptions, format)</p>
+  var basepath = path.split('?')[0]
+  var refObj = getRef(basepath)
+  msg = msg + `<p><B>Usage:</b> listObjects(path, listOptions, format)</p>
    <p>The path is the path to your API collection and the listOptions object is formatted as JSON:<br><pre>
    {
      title: 'fieldname',
@@ -69,29 +71,28 @@ function listObjects(path, listOptions, format) {
   }
   else {
     var obj = returnObj(path)
-    console.log(obj)
-    console.log(listOptions)
     if (format == 'tiles') {
-      msg = msg + `<div style="padding:0 8px;border-radius:32px;text-align:center!important;padding-top:16px!important;padding-bottom:16px!important">`
-      for (var i = 0; i < obj.objects.length; i++) {
-        var tmp = tileTemplate;
-        var link = listOptions.link
-        for (const [key, value] of Object.entries(obj.objects[i].object)) {
-          var rE = '{' + key + '}'
-          var rE2 = new RegExp(rE, 'g')
-          link = link.replace(rE2, value)
-        }
-        tmp = tmp.replace(/fTILETITLE/g, obj.objects[i].object[listOptions.title])
-        tmp = tmp.replace(/fTILEBLURB/g, obj.objects[i].object[listOptions.blurb])
-        tmp = tmp.replace(/fTILEIMAGE/g, obj.objects[i].object[listOptions.img])
-        tmp = tmp.replace(/fTILETARGET/g, link)
-        msg = msg + tmp
+      if (typeof(obj.object) != 'undefined') {
+        msg = msg + renderTile(obj, listOptions)
       }
-      msg = msg + "</div>"
+      else {
+        for (var i = 0; i < obj.objects.length; i++) {
+          msg = msg + renderTile(obj.objects[i], listOptions)
+        }
+      }
     }
-    return msg
+    else {
+      if (typeof(obj.object) != 'undefined') {
+        msg = msg + renderList(obj, listOptions)
+      }
+      else {
+        for (var i = 0; i < obj.objects.length; i++) {
+          msg = msg + renderList(obj.objects[i], listOptions)
+      }
+    }
   }
-
+  }
+  return msg
 }
 
 function editObjects(path) {
@@ -738,14 +739,78 @@ function uxapiLogin() {
 
 }
 
-var tileTemplate = `
-<div style="float:left;width:100%;width:24.99999%">
-  <h3>fTILETITLE</h3>
-  <ul style="list-style-type:none;padding:0;margin:0;" class="clickable">
-    <li class="w3-padding-16" class="clickable" onclick="location.href='fTILETARGET'">
-      <img src="fTILEIMAGE" style="width:100%;float:left!important;margin-right:16px!important">
-      <span>fTILEBLURB</span>
-    </li>
-  </ul>
-</div>
-`
+function renderTile(obj, listOptions) {
+  var msg = ''
+  console.log(obj)
+  var tileTemplate = `
+  <div class="uxapi-tile" style="float:left;width:100%;width:24.99999%">
+    <h3>fTILETITLE</h3>
+    <ul style="list-style-type:none;padding:0;margin:0;" class="clickable">
+      <li class="w3-padding-16" class="clickable" onclick="location.href='fTILETARGET'">
+        <img src="fTILEIMAGE" style="width:100%;float:left!important;margin-right:16px!important">
+        <span>fTILEBLURB</span>
+      </li>
+    </ul>
+  </div>
+  `
+  msg = msg + `<div style="padding:0 8px;border-radius:32px;text-align:center!important;padding-top:16px!important;padding-bottom:16px!important">`
+  var tmp = tileTemplate;
+  var link = listOptions.link
+  for (const [key, value] of Object.entries(obj.object)) {
+    var rE = '{' + key + '}'
+    var rE2 = new RegExp(rE, 'g')
+    link = link.replace(rE2, value)
+  }
+  if (link.includes('{objectID}') == true) {
+    var rE = '{objectID}'
+    var rE2 = new RegExp(rE, 'g')
+    link = link.replace(rE2, obj.objectID)
+  }
+  if (typeof(listOptions.img) == 'undefined') {obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}
+  else if (obj.object[listOptions.img].length == 0 ) obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"
+  tmp = tmp.replace(/fTILETITLE/g, obj.object[listOptions.title])
+  tmp = tmp.replace(/fTILEBLURB/g, obj.object[listOptions.blurb])
+  tmp = tmp.replace(/fTILEIMAGE/g, obj.object[listOptions.img])
+  tmp = tmp.replace(/fTILETARGET/g, link)
+  msg = msg + tmp
+  return msg
+}
+
+function renderList(obj) {
+  var msg = ''
+  var link = listOptions.link
+  for (const [key, value] of Object.entries(obj.object)) {
+    var rE = '{' + key + '}'
+    var rE2 = new RegExp(rE, 'g')
+    link = link.replace(rE2, value)
+  }
+  if (link.includes('{objectID}') == true) {
+    var rE = '{objectID}'
+    var rE2 = new RegExp(rE, 'g')
+    link = link.replace(rE2, obj.objectID)
+  }
+  if (typeof(listOptions.img) == 'undefined') {obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}
+  else if (obj.object[listOptions.img].length == 0 ) obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"
+  msg = msg + `<p><a href="` + link + `"><b>` + obj.object[listOptions.title] + `</b></A><br/>`
+  msg = msg + `<img src="` + obj.object[listOptions.img] + `" style="float: right; margin: 0px 15px 15px 0px;"  alt="` + obj.object[listOptions.title] + `">` +obj.object[listOptions.blurb] + ` <br style="clear: both;" /></p>`
+  return msg
+}
+
+
+function ckEditor() {
+  ClassicEditor
+    .create( document.querySelector( '.editor' ), {
+      plugin: ['Markdown', 'Base64UploadAdapter'],
+     licenseKey: '',
+     config: { height: '800px'},
+    } )
+    .then( editor => {
+      window.editor = editor;
+    } )
+    .catch( error => {
+//      console.error( 'Something went wrong with ckeditor' );
+  //    console.error( 'Please, report the following error on https://github.com/ckeditor/ckeditor5/issues with the build id and the error stack trace:' );
+  //    console.warn( 'Build id: myzmd7eray8w-unt8fr6ckh47' );
+  //    console.error( error );
+    } );
+  }
