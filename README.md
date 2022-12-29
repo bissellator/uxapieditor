@@ -10,6 +10,7 @@ Three variables need to be defined:
 * clientID: the clientID which you can find in your Remote Dashboard on [UXAPI.io/dashboard](https://uxapi.io/dashboard)
 * clientSecret: the secret which is also on the [remote dashboard](https://uxapi.io/dashboard)
 
+Also the library outputs with CSS classes from the `uxapi.css` file, also included in this repo
 
 ### `returnObj(path)`
 Returns the JSON object from the API
