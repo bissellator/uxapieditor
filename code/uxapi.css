@@ -1,0 +1,100 @@
+.buttonget {
+	background: #61affe;
+	padding: 3px;
+	color: #ffffff;
+	font-weight: bold;
+	font-family: sans-serif;
+	line-height:18pt;
+}
+
+.buttonpost {
+	background: #49cc90;
+	padding: 3px;
+	color: #ffffff;
+	font-weight: bold;
+	font-family: sans-serif;
+	line-height: 18pt;
+}
+.buttonput {
+	background: #fca130;
+	padding: 3px;
+	color: #ffffff;
+	font-weight: bold;
+	font-family: sans-serif;
+	line-height: 18pt;
+}
+
+.buttondelete {
+	background: #f93e3e;
+	padding: 3px;
+	color: #ffffff;
+	font-weight: bold;
+	font-family: sans-serif;
+	line-height:18pt;
+}
+
+.codeblock {
+  font-family: 'Lucida', monospace;
+  font-size: 80%;
+  padding:10px;
+  color: #00A800;
+  background-color: #333;
+  white-space: pre-wrap;
+}
+
+.hidden {
+	visibility:hidden;
+	height: 0px
+}
+
+.uxapi-text {
+    box-shadow: none;
+    resize: none;
+		height: 2em;
+		width: 50em;
+}
+
+.uxapi-textarea {
+	width:80%
+}
+
+.uxapitiles {
+	padding:0 8px;
+	box-sizing: inherit;
+	text-align:center!important;
+	padding-top:16px!important;
+	padding-bottom:16px!important;
+}
+
+.uxapitiles:after {
+	content:"";
+	display:table;
+	clear:both
+}
+
+.uxapitile {
+	float:left;
+	width:24.99999%;
+	text-align: center;
+}
+
+
+.uxapitile img {
+	width:100%;
+	float:left!important;
+	padding: 10px;
+	margin-right:16px!important;
+}
+
+.uxapilistimg {
+	width:30%;
+	float: right;
+}
+
+.ck-editor__editable_inline {
+    min-height: 400px;
+}
+
+.clickable {
+	cursor: pointer;
+}

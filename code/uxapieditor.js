@@ -52,42 +52,43 @@ function listObjects(path, listOptions, format) {
   var msg = ""
   if (typeof(format) == 'undefined') {format = 'list'}
   if (typeof(listOptions) == 'undefined' || typeof(path) =='undefined' || typeof(listOptions) != 'object') {
-  var basepath = path.split('?')[0]
-  var refObj = getRef(basepath)
-  msg = msg + `<p><B>Usage:</b> listObjects(path, listOptions, format)</p>
-   <p>The path is the path to your API collection and the listOptions object is formatted as JSON:<br><pre>
-   {
-     title: 'fieldname',
-     blurb: 'filedname',
-     img: 'fieldname',
-     link: '` + location.hostname + `/somelink/{fieldname}/index.html?pathvar?{fieldname}'
-   }</pre></p>`
-   msg = msg + `<p>Please provide listOptions from the following fields</p><ul>`
-   for (const [key, value] of Object.entries(refObj.properties)) {
-     msg = msg + `<li>` + key + `</li>`
-   }
-   msg = msg +`</ul></p><p>format is an optional string for "list" or "tiles" for how the object will be returned`
-   return msg;
+    msg = msg + '<p>Please provide path and listOptions (see <a href="https://github.com/bissellator/uxapieditor/blob/main/README.md" target="_blank">README</A>)'
+    return msg;
   }
   else {
     var obj = returnObj(path)
+    if (obj.error) {return obj.error}
+    var basepath = path.split('?')[0]
+    var ref = getRef(basepath)
+    var contract = getContract()
+    var fieldclasses = getFormats(contract, ref)
+
+    var divhead  = `<div class="uxapitiles">`
     if (format == 'tiles') {
+
       if (typeof(obj.object) != 'undefined') {
+        msg = msg + divhead
         msg = msg + renderTile(obj, listOptions)
       }
       else {
+        msg = msg + divhead
         for (var i = 0; i < obj.objects.length; i++) {
-          msg = msg + renderTile(obj.objects[i], listOptions)
+          if (parseInt((i+1)/4) == ((i)/4) && i > 0) {
+              console.log(parseInt(i/4) +" "+ (i/4))
+              msg = msg + "</div>" + divhead
+            }
+            msg = msg + renderTile(obj.objects[i], listOptions)
+          }
         }
-      }
+      msg = msg + "</div>"
     }
     else {
       if (typeof(obj.object) != 'undefined') {
-        msg = msg + renderList(obj, listOptions)
+        msg = msg + renderList(obj, listOptions, fieldclasses)
       }
       else {
         for (var i = 0; i < obj.objects.length; i++) {
-          msg = msg + renderList(obj.objects[i], listOptions)
+          msg = msg + renderList(obj.objects[i], listOptions, fieldclasses)
       }
     }
   }
@@ -236,6 +237,7 @@ function editObject(path, contractpath, fieldclasses) {
         fieldlabel = fieldclasses[key].label
       }
     }
+
     if (fieldclasses[key].type == 'select') {
       respmsg = respmsg + "<tr><td>" + fieldlabel + `</td>
         <td><select class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `/` + objectID + `', 'PUT')">`
@@ -277,6 +279,12 @@ function editObject(path, contractpath, fieldclasses) {
 }
 
 function postObjectForm(path, contractpath, fieldclasses) {
+  var tokenmsg = (refreshToken())
+  if (typeof(tokenmsg) == 'string') {
+    return tokenmsg
+  }
+  try {JSON.parse(tokenmsg); }catch {
+  }
   if (typeof(contractpath) == 'undefined') {
     var pathels = path.split('/')
     contractpath = ''
@@ -313,6 +321,7 @@ function postObjectForm(path, contractpath, fieldclasses) {
             fieldlabel = fieldclasses[key].label
           }
         }
+        if (fieldclasses[key].class == 'uxapi-markdown') fieldclass = 'editor'
         if (fieldclasses[key].type == 'select') {
           respmsg = respmsg + "<tr><td>" + fieldlabel + `</td>
             <td><select class="`+fieldclass+`" id="`+ key + `">`
@@ -336,7 +345,7 @@ function postObjectForm(path, contractpath, fieldclasses) {
           respmsg = respmsg + `<td>
             <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7" class="uxapi-image" id="`+key+`.form-` + objectID + `"><br/>
             <input type="file" onchange="encodeImageFileAsBase64(this, 'form-` + objectID + `', '` + key + `')" />
-            <textarea id="`+key+`"  ></textarea>
+            <textarea id="`+key+`" style="visiblity:hidden; height:0px;width:0px;" ></textarea>
             </td></tr>`
         }
         else {
@@ -344,6 +353,7 @@ function postObjectForm(path, contractpath, fieldclasses) {
         }
       }
       respmsg = respmsg + `</table><p style="	cursor: pointer;border: 1px solid;padding: 10px; box-shadow: 5px 10px #888888;width:100px" onclick="saveObject('` + objectID + `', '` + path + `', 'POST')" value='Post New'>Post New</p></form>`
+      ckEditor()
       return respmsg
     }
   }
@@ -629,8 +639,7 @@ function getRef(path,contractpath) {
   if(typeof contract.paths[contractpath] != 'undefined') {
     if(typeof contract.paths[contractpath].post != 'undefined') {
       var ref = contract.paths[contractpath].post.requestBody.content["application/json"].schema["$ref"]
-      var refObj = resolver(contract, ref)
-      return refObj
+      return ref
     }
   }
 }
@@ -675,9 +684,6 @@ function getFormats(contract, ref) {
           pageclasses[key].options = refObj[key].enum
         }catch{}
       }
-      else if (refObj[key].format == 'markdown') {
-        pageclasses[key].class = 'editor'
-      }
       else if (refObj[key].format == 'image') {
         pageclasses[key].class = 'uxapi-image'
       }
@@ -695,16 +701,130 @@ function getFormats(contract, ref) {
 return pageclasses
 }
 
-function uxapiLogin() {
-  document.write(`<div id="loginbox"></div>`)
+function renderTile(obj, listOptions) {
+  var msg = ''
+  console.log(obj)
+  var tileTemplate = `
+  <div class="uxapitile">
+    <h3>fTILETITLE</h3>
+    <ul style="list-style-type:none;padding:0;margin:0;" class="clickable">
+      <li class="w3-padding-16" class="clickable" onclick="location.href='fTILETARGET'">
+        <img src="fTILEIMAGE">
+        <span>fTILEBLURB</span>
+      </li>
+    </ul>
+  </div>
+  `
+  tileTemplate = `
+  <div class="uxapitile" style="cursor:pointer" onclick="location.href='fTILETARGET'">
+    <img src="fTILEIMAGE" alt="fTILETITLE" style="width:100%">
+    <h3>fTILETITLE</h3>
+    <p>fTILEBLURB</p>
+  </div>
+  `
+  var tmp = tileTemplate;
+  var link = listOptions.link
+  for (const [key, value] of Object.entries(obj.object)) {
+    var rE = '{' + key + '}'
+    var rE2 = new RegExp(rE, 'g')
+    link = link.replace(rE2, value)
+  }
+  if (link.includes('{objectID}') == true) {
+    var rE = '{objectID}'
+    var rE2 = new RegExp(rE, 'g')
+    link = link.replace(rE2, obj.objectID)
+  }
+  if (typeof(listOptions.img) == 'undefined') {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}catch{}}
+  else if (listOptions.img == null) {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}catch{}}
+  else if (listOptions.img.length == 0) {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}catch{}}
+  if (obj.object[listOptions.img].length == 0 ) {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}catch{}}
+  tmp = tmp.replace(/fTILETITLE/g, obj.object[listOptions.title])
+  tmp = tmp.replace(/fTILEBLURB/g, obj.object[listOptions.blurb])
+  tmp = tmp.replace(/fTILEIMAGE/g, obj.object[listOptions.img])
+  tmp = tmp.replace(/fTILETARGET/g, link)
+  msg = msg + tmp
+  return msg
+}
+
+function renderList(obj, listOptions, fieldclasses) {
+  var msg = ''
+  var link = listOptions.link
+  for (const [key, value] of Object.entries(obj.object)) {
+    var rE = '{' + key + '}'
+    var rE2 = new RegExp(rE, 'g')
+    link = link.replace(rE2, value)
+  }
+  if (link.includes('{objectID}') == true) {
+    var rE = '{objectID}'
+    var rE2 = new RegExp(rE, 'g')
+    link = link.replace(rE2, obj.objectID)
+  }
+  if (typeof(listOptions.img) == 'undefined') {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}catch{}}
+  else if (listOptions.img == null) {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}catch{}}
+  else if (listOptions.img.length == 0) {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}catch{}}
+  if (obj.object[listOptions.img].length == 0 ) {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}catch{}}
+  msg = msg + `<p><a href="` + link + `"><b>` + obj.object[listOptions.title] + `</b></A><br/>`
+  msg = msg + `<img src="` + obj.object[listOptions.img] + `" class='uxapilistimg'  alt="` + obj.object[listOptions.title] + `">`
+  msg = msg  + `<span class="` + fieldclasses[listOptions.blurb].class + `">` + obj.object[listOptions.blurb] + `</span> <br style="clear: both;" /></p>`
+  return msg
+}
+
+function refreshToken() {
+  var payload = "grant_type=refresh_token&refresh_token=" + window.sessionStorage.refresh
+  var response = $.ajax({
+    url: uxapihost + '/v1/uxapi/tokens/create',
+    async: false,
+    type:'POST',
+    dataType: 'text',
+    data: payload,
+    contentType: 'application/x-www-form-urlencoded',
+    beforeSend: function(xhr) {
+      xhr.setRequestHeader("Authorization", "Basic "+ btoa(clientID + ':' + clientSecret));
+    },
+    success: function(text){
+			  if(typeof(text.error) != 'undefined') {
+          return("hi")
+				}
+				else {
+          text = JSON.parse(text)
+          window.sessionStorage.token = text.access_token
+          window.sessionStorage.refresh = text.refresh_token
+				}
+    },
+    error: function(err) {
+      return err
+        //console.log(err)
+    }
+	});
+  var response = JSON.parse(response.responseText)
+  if (typeof(response.error) != "undefined") {
+    return uxapilogin()
+  }
+  else {
+    return response
+  }
+}
+
+function uxapilogin() {
+  var params = {}
+  var urlParams = new URLSearchParams(location.search);
+  for (const [key, value] of urlParams) {
+    params[key] = value;
+  }
   if (typeof(params.code) == 'undefined') {
-    $.get(uxapihost + '/v1/uxapi/auth/login.html?client_id=' + clientID + '&redirect_uri=' + window.location.href,function(response){
-      document.getElementById("loginbox").innerHTML = response;
+    var response = $.ajax({
+      url: uxapihost + '/v1/uxapi/auth/login.html?client_id=' + clientID + '&redirect_uri=' + window.location.href,
+      async: false,
+      type: 'GET',
+      success: function(text) {
+
+      }
     });
+    return response.responseText
   }
   else {
     var payload = "grant_type=authorization_code&code=" + params.code
-    $.ajax({
+    var respose = $.ajax({
       url: uxapihost + '/v1/uxapi/tokens/create',
       async: true,
       type:'POST',
@@ -735,74 +855,17 @@ function uxapiLogin() {
         console.log(err)
         return;
       }
-    });  }
-
+    });
+    return response
+  }
 }
-
-function renderTile(obj, listOptions) {
-  var msg = ''
-  console.log(obj)
-  var tileTemplate = `
-  <div class="uxapi-tile" style="float:left;width:100%;width:24.99999%">
-    <h3>fTILETITLE</h3>
-    <ul style="list-style-type:none;padding:0;margin:0;" class="clickable">
-      <li class="w3-padding-16" class="clickable" onclick="location.href='fTILETARGET'">
-        <img src="fTILEIMAGE" style="width:100%;float:left!important;margin-right:16px!important">
-        <span>fTILEBLURB</span>
-      </li>
-    </ul>
-  </div>
-  `
-  msg = msg + `<div style="padding:0 8px;border-radius:32px;text-align:center!important;padding-top:16px!important;padding-bottom:16px!important">`
-  var tmp = tileTemplate;
-  var link = listOptions.link
-  for (const [key, value] of Object.entries(obj.object)) {
-    var rE = '{' + key + '}'
-    var rE2 = new RegExp(rE, 'g')
-    link = link.replace(rE2, value)
-  }
-  if (link.includes('{objectID}') == true) {
-    var rE = '{objectID}'
-    var rE2 = new RegExp(rE, 'g')
-    link = link.replace(rE2, obj.objectID)
-  }
-  if (typeof(listOptions.img) == 'undefined') {obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}
-  else if (obj.object[listOptions.img].length == 0 ) obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"
-  tmp = tmp.replace(/fTILETITLE/g, obj.object[listOptions.title])
-  tmp = tmp.replace(/fTILEBLURB/g, obj.object[listOptions.blurb])
-  tmp = tmp.replace(/fTILEIMAGE/g, obj.object[listOptions.img])
-  tmp = tmp.replace(/fTILETARGET/g, link)
-  msg = msg + tmp
-  return msg
-}
-
-function renderList(obj) {
-  var msg = ''
-  var link = listOptions.link
-  for (const [key, value] of Object.entries(obj.object)) {
-    var rE = '{' + key + '}'
-    var rE2 = new RegExp(rE, 'g')
-    link = link.replace(rE2, value)
-  }
-  if (link.includes('{objectID}') == true) {
-    var rE = '{objectID}'
-    var rE2 = new RegExp(rE, 'g')
-    link = link.replace(rE2, obj.objectID)
-  }
-  if (typeof(listOptions.img) == 'undefined') {obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}
-  else if (obj.object[listOptions.img].length == 0 ) obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"
-  msg = msg + `<p><a href="` + link + `"><b>` + obj.object[listOptions.title] + `</b></A><br/>`
-  msg = msg + `<img src="` + obj.object[listOptions.img] + `" style="float: right; margin: 0px 15px 15px 0px;"  alt="` + obj.object[listOptions.title] + `">` +obj.object[listOptions.blurb] + ` <br style="clear: both;" /></p>`
-  return msg
-}
-
 
 function ckEditor() {
   ClassicEditor
     .create( document.querySelector( '.editor' ), {
       plugin: ['Markdown', 'Base64UploadAdapter'],
      licenseKey: '',
-     config: { height: '800px'},
+     config: { height: '800px', fontFamily: 'Arial, Helvetica, sans-serif'},
     } )
     .then( editor => {
       window.editor = editor;
