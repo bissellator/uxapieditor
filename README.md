@@ -15,6 +15,17 @@ The library outputs with CSS classes from the `uxapi.css` file, also included in
 #### Editor
 The rich editor for the `markdown` format used by UXAPI uses ckeditor.  There is a prebuilt ckeditor in this project, but be aware that this is only for ease-of-use and you should consider making your own build and, depending on your usage, getting a license.
 
+Because I'm not very good at includes, the editor needs an extra bit of code on each page where you're using markdown:
+
+```
+var ele = document.getElementsByClassName('editor');
+for (var i=0; i< ele.length; i++ ) {
+  ckEditor(ele[i].id);
+}
+```
+
+This will instantiate an editor for each field that is rendered using Markdown. 
+
 ## Authentication
 The library assumes you have an access token stored in `window.sessionStorage.token` which can be generated using standard OAuth flows, but we have a prebuilt process using the following functions:
 
@@ -60,10 +71,10 @@ This performs a simple GET against the API and returns response as a JSON object
 
 ---
 
-#### `delObj(path, objectLabel)`
+#### `delObject(path, objectLabel)`
 Deletes the object located at the `path` -- this is used by the `editObject()` and `editObjects()` functions but can also be called directly.
 
 Example:  
-`delObj('/v1/blogs/81a3722e-4975-4cf7-8940-89859666b3f8', 'My Adventures in Amsterdam')`
+`delObject  ('/v1/blogs/81a3722e-4975-4cf7-8940-89859666b3f8', 'My Adventures in Amsterdam')`
 
 `objectLabel` is optionally used to provide a human readable warning "you are going to delete {objectLabel}.." -- if an `objectLabel` is not provided the UUID for the `objectID` will be displayed.

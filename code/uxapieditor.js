@@ -1,4 +1,3 @@
-
 function returnObj(path) {
   if (typeof(window.sessionStorage.token) != 'undefined') {
     var obj = $.ajax({
@@ -100,99 +99,102 @@ function editObjects(path) {
   var resp = ""
   var basepath = path.split('?')[0]
   var list = returnObj(path)
-  if (typeof(list.objects) != 'undefined') {
-
-    if (typeof(fieldclasses) == 'undefined') {
-      if (typeof(contractpath) == 'undefined') {
-        var pathels = path.split('/')
-        contractpath = ''
-        for (var i =1; i <pathels.length; i ++) {
-          if(pathels[i].match(/^.{8}[-]/) != null) {
-            pathels[i] = '{' + pathels[i-1] + 'Id}'
-          }
-          contractpath = contractpath + '/' + pathels[i]
-        }
+  var contractpath = ''
+    var pathels = path.split('/')
+    contractpath = ''
+    for (var i =1; i <pathels.length; i++) {
+      if(pathels[i].match(/^.{8}[-]/) != null) {
+        pathels[i] = '{' + pathels[i-1] + 'Id}'
       }
+      contractpath = contractpath + '/' + pathels[i]
+
       var contract = getContract()
       if(typeof contract.paths[contractpath] != 'undefined') {
         if(typeof contract.paths[contractpath].post != 'undefined') {
           var ref = contract.paths[contractpath].post.requestBody.content["application/json"].schema["$ref"]
           var refObj = resolver(contract, ref)
-            fieldclasses = getFormats(contract, ref)
-          }
+          fieldclasses = getFormats(contract, ref)
+        }
+        else if (typeof(contract.paths[contractpath].get) != 'undefined') {
+          var ref = contract.paths[contractpath].get.responses['200'].content["application/json"].schema["$ref"]
+          var refObj = resolver(contract, ref)
+          fieldclasses = getFormats(contract, refObj.properties.object['$ref'])
         }
       }
-    for (var i =0; i < list.objects.length; i++) {
-      var objectID = list.objects[i].objectID
-      resp = resp + `<hr /><span class="clickable" onclick="delObj('` + basepath + `/` + objectID +`', '`+ list.objects[i].objectID +`')">&#128465; Delete</span><Br />`
-      var respmsg = `<form id="form-`+ objectID + `"><table border=0>`
-      var text = list.objects[i]
-      var object = text
-      for (const [key, value] of Object.entries(object.object)) {
-        var fieldclass="uxapi-textarea"
-        var fieldvalue = ""
-        var fieldlabel = key
-        if (typeof(fieldclasses[key]) != 'undefined') {
-          if(typeof(fieldclasses[key].class) != 'undefined') {
-            fieldclass = fieldclasses[key].class
-          }
-          else {fieldclass="uxapi-textarea"}
-          if (typeof(fieldclasses[key].value) != 'undefined') {
-            fieldvalue = fieldclasses[key].value
-          }
-          if (typeof(fieldclasses[key].label) != 'undefined') {
-            fieldlabel = fieldclasses[key].label
-          }
-        }
-        if (fieldclasses[key].type == 'select') {
-          respmsg = respmsg + "<tr><td>" + fieldlabel + `</td>
-            <td><select class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `/` + objectID + `', 'PUT')">`
-            respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `">` + fieldclasses[key].options[e] + `</option>`
-          for (var e =0; e < fieldclasses[key].options.length; e++) {
-            var selected = ''
-            if (fieldclasses[key].options[e] == value) {selected = 'selected'}
-            respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `" ` + selected +`>` + fieldclasses[key].options[e] + `</option>`
-          }
-          respmsg = respmsg + `</select></td></tr>`
-        }
-        else if (fieldclasses[key].type == 'boolean') {
-          respmsg = respmsg + "<tr><td>" + fieldlabel + `</td>
-            <td><select class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `/` + objectID + `', 'PUT')">`
-            respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `">` + fieldclasses[key].options[e] + `</option>`
-          for (var e =0; e < fieldclasses[key].options.length; e++) {
-            var selected = ''
-            if (fieldclasses[key].options[e] == value) {selected = 'selected'}
-            respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `" ` + selected +`>` + fieldclasses[key].options[e] + `</option>`
-          }
-          respmsg = respmsg + `</select></td></tr>`
-        }
-        else if (fieldclasses[key].class == 'uxapi-image') {
-          respmsg = respmsg + `<tr><td>` + fieldlabel + `</td>`
-          respmsg = respmsg + `<td>
-            <img src="` + value + `" class="uxapi-image" id="`+key+`.form-` + objectID +`"><br/>
-            <input type="file" onchange="encodeImageFileAsBase64(this, 'form-` + objectID + `', '` + key + `');saveObject('` + objectID + `', '` + basepath + `/` + objectID + `', 'PUT')" />
-            <textarea id="`+key+`" style="visibility:hidden;height:0px;width:0px">`+ value + `</textarea>
-            </td></tr>`
-        }
-        else {
-          respmsg = respmsg + "<tr><td>" + key + `</td><td><textarea class="` + fieldclass + `" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `/` + objectID + `', 'PUT')">` + value + `</textarea></td></tr>`
-        }
-      }
-      respmsg = respmsg + `</table></form><Br />`
-      var sublink = ''
-      if (typeof(subCollection) != 'undefined' && typeof(subCollectionTarget) != 'undefined') {
-        var subpath = path.split('?')[0] + `/` + objectID + `/` + subCollection
-        sublink = `<div onclick="document.getElementById('`+ subCollectionTarget + `').innerHTML= editObjects('`+ subpath + `', '`+subLabel+`')">` + subCollection + `</div>`
-      }
-      resp = resp+respmsg + sublink
     }
-  }
-  return resp + postObjectForm(basepath)
+    if (typeof(list.objects) != 'undefined') {
+      for (var i =0; i < list.objects.length; i++) {
+        var objectID = list.objects[i].objectID
+        resp = resp + `<hr /><span class="clickable" onclick="delObject('` + basepath + `/` + objectID +`', '`+ list.objects[i].objectID +`')">&#128465; Delete</span><Br />`
+        var respmsg = `<div id="` + objectID +`"><form id="form-`+ objectID + `"><table border=0>`
+        var text = list.objects[i].object
+        var object = text
+        for (const [key, value] of Object.entries(object)) {
+          var fieldclass="uxapi-textarea"
+          var fieldvalue = ""
+          var fieldlabel = key
+          if (typeof(fieldclasses[key]) != 'undefined') {
+            if(typeof(fieldclasses[key].class) != 'undefined') {
+              fieldclass = fieldclasses[key].class
+            }
+            else {fieldclass="uxapi-textarea"}
+            if (typeof(fieldclasses[key].value) != 'undefined') {
+              fieldvalue = fieldclasses[key].value
+            }
+            if (typeof(fieldclasses[key].label) != 'undefined') {
+              fieldlabel = fieldclasses[key].label
+            }
+          }
+          if (typeof(fieldclasses[key].type) == 'undefined') {
+            fieldclasses[key].type = 'text'
+          }
+          if (fieldclasses[key].type == 'select') {
+            respmsg = respmsg + "<tr><td>" + fieldlabel + `</td>
+              <td><select class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `/` + objectID + `', 'PUT')">`
+              respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `">` + fieldclasses[key].options[e] + `</option>`
+            for (var e =0; e < fieldclasses[key].options.length; e++) {
+              var selected = ''
+              if (fieldclasses[key].options[e] == value) {selected = 'selected'}
+              respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `" ` + selected +`>` + fieldclasses[key].options[e] + `</option>`
+            }
+            respmsg = respmsg + `</select></td></tr>`
+          }
+          else if (fieldclasses[key].type == 'boolean') {
+            respmsg = respmsg + "<tr><td>" + fieldlabel + `</td>
+              <td><select class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `/` + objectID + `', 'PUT')">`
+              respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `">` + fieldclasses[key].options[e] + `</option>`
+            for (var e =0; e < fieldclasses[key].options.length; e++) {
+              var selected = ''
+              if (fieldclasses[key].options[e] == value) {selected = 'selected'}
+              respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `" ` + selected +`>` + fieldclasses[key].options[e] + `</option>`
+            }
+            respmsg = respmsg + `</select></td></tr>`
+          }
+          else if (fieldclasses[key].class == 'uxapi-image') {
+            respmsg = respmsg + `<tr><td>` + fieldlabel + `</td>`
+            respmsg = respmsg + `<td>
+              <img src="` + value + `" class="uxapi-image" id="`+key+`.form-` + objectID +`"><br/>
+              <input type="file" onchange="encodeImageFileAsBase64(this, 'form-` + objectID + `', '` + key + `');saveObject('` + objectID + `', '` + basepath + `/` + objectID + `', 'PUT')" />
+              <textarea id="`+key+`" style="visibility:hidden;height:0px;width:0px">`+ value + `</textarea>
+              </td></tr>`
+          }
+          else {
+            respmsg = respmsg + "<tr><td>" + key + `</td><td><textarea class="` + fieldclass + `" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `/` + objectID + `', 'PUT')">` + value + `</textarea></td></tr>`
+          }
+        }
+        respmsg = respmsg + `</table></form></div>`
+        var sublink = ''
+        if (typeof(subCollection) != 'undefined' && typeof(subCollectionTarget) != 'undefined') {
+          var subpath = path.split('?')[0] + `/` + objectID + `/` + subCollection
+          sublink = `<div onclick="document.getElementById('`+ subCollectionTarget + `').innerHTML= editObjects('`+ subpath + `', '`+subLabel+`')">` + subCollection + `</div>`
+        }
+        resp = resp+respmsg + sublink
+      }
+    }
+  return resp
 }
 
-function editObject(path, contractpath, fieldclasses) {
-  var basepath = path.split('?')[0]
-
+function editObject(path, uxapidiv) {
   if (typeof(fieldclasses) == 'undefined') {
     if (typeof(contractpath) == 'undefined') {
       var pathels = path.split('/')
@@ -204,10 +206,7 @@ function editObject(path, contractpath, fieldclasses) {
         contractpath = contractpath + '/' + pathels[i]
       }
     }
-    console.log(contractpath)
     var contract = getContract()
-    contract = JSON.parse(contract.responseText)
-    console.log(contract)
     if(typeof contract.paths[contractpath] != 'undefined') {
       if(typeof contract.paths[contractpath].put != 'undefined') {
         var ref = contract.paths[contractpath].put.requestBody.content["application/json"].schema["$ref"]
@@ -217,8 +216,25 @@ function editObject(path, contractpath, fieldclasses) {
       }
     }
 
-  var object = returnObj(path)
-//  var object = JSON.parse(text.responseText)
+    var object = returnObj(path)
+    if (typeof(object.objects) != 'undefined') {
+      msg = "Use editObjects(path) for now... (that's with an s)"
+      return msg
+    }
+    if (typeof(object.error) != 'undefined') {
+      return object.error
+    }
+    if (typeof(uxapidiv) == 'undefined') {
+      return renderEditObj(path, fieldclasses, object)
+    }
+    else {
+      document.getElementById(uxapidiv).innerHTML = renderEditObj(path, fieldclasses, object)
+      return
+    }
+}
+
+function renderEditObj(path, fieldclasses, object) {
+  var basepath = path.split('?')[0]
   var objectID = object.objectID
   var respmsg = `<form id="form-`+ objectID + `"><table border=0>`
   for (const [key, value] of Object.entries(object.object)) {
@@ -237,10 +253,11 @@ function editObject(path, contractpath, fieldclasses) {
         fieldlabel = fieldclasses[key].label
       }
     }
+    if (fieldclasses[key].class == 'uxapi-markdown') fieldclass = 'editor'
 
     if (fieldclasses[key].type == 'select') {
       respmsg = respmsg + "<tr><td>" + fieldlabel + `</td>
-        <td><select class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `/` + objectID + `', 'PUT')">`
+        <td><select class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `', 'PUT')">`
         respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `">` + fieldclasses[key].options[e] + `</option>`
       for (var e =0; e < fieldclasses[key].options.length; e++) {
         var selected = ''
@@ -251,7 +268,7 @@ function editObject(path, contractpath, fieldclasses) {
     }
     else if (fieldclasses[key].type == 'boolean') {
       respmsg = respmsg + "<tr><td>" + fieldlabel + `</td>
-        <td><select class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `/` + objectID + `', 'PUT')">`
+        <td><select class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `', 'PUT')">`
         respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `">` + fieldclasses[key].options[e] + `</option>`
       for (var e =0; e < fieldclasses[key].options.length; e++) {
         var selected = ''
@@ -264,39 +281,38 @@ function editObject(path, contractpath, fieldclasses) {
       respmsg = respmsg + `<tr><td>` + fieldlabel + `</td>`
       respmsg = respmsg + `<td>
         <img src="` + value + `" class="uxapi-image" id="`+key+`.form-` + objectID +`"><br/>
-        <input type="file" onchange="encodeImageFileAsBase64(this, 'form-` + objectID + `', '` + key + `');saveObject('` + objectID + `', '` + basepath + `/` + objectID + `', 'PUT')" />
+        <input type="file" onchange="encodeImageFileAsBase64(this, 'form-` + objectID + `', '` + key + `');saveObject('` + objectID + `', '` + basepath + `', 'PUT')" />
         <textarea id="`+key+`" style="visibility:hidden;height:0px;width:0px">`+ value + `</textarea>
         </td></tr>`
     }
     else {
-      respmsg = respmsg + "<tr><td>" + fieldlabel + `</td><td><textarea class="`+fieldclass+`" id="`+ key + `">` + value + `</textarea></td>`
+      respmsg = respmsg + "<tr><td>" + fieldlabel + `</td><td><textarea class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath  + `', 'PUT')">` + value + `</textarea></td>`
     }
   }
-  // respmsg = respmsg + `</table></form>`
   respmsg = respmsg + `</table><p type="button" class="clickable" onclick="saveObject('` + objectID + `', '` + path + `', 'PUT')" value='Save'>Save</p></form>`
-
+  respmsg = respmsg + editObjects(basepath + '/' + getSubCollections(basepath))
+  respmsg = respmsg + postObjectForm(basepath + '/' + getSubCollections(basepath))
   return respmsg
+
 }
 
-function postObjectForm(path, contractpath, fieldclasses) {
+function postObjectForm(path, fieldclasses) {
   var tokenmsg = (refreshToken())
   if (typeof(tokenmsg) == 'string') {
     return tokenmsg
   }
   try {JSON.parse(tokenmsg); }catch {
   }
-  if (typeof(contractpath) == 'undefined') {
-    var pathels = path.split('/')
-    contractpath = ''
-    for (var i =1; i <pathels.length; i ++) {
-      if(pathels[i].match(/^.{8}[-]/) != null) {
-        pathels[i] = '{' + pathels[i-1] + 'Id}'
-      }
-      contractpath = contractpath + '/' + pathels[i]
+  var pathels = path.split('/')
+  contractpath = ''
+  for (var i =1; i <pathels.length; i ++) {
+    if(pathels[i].match(/^.{8}[-]/) != null) {
+      pathels[i] = '{' + pathels[i-1] + 'Id}'
     }
+    contractpath = contractpath + '/' + pathels[i]
   }
   objectID = btoa(makeid())
-  var respmsg = '<form id="form-' + objectID + '"><B>Add a new object</B><table border=0>'
+  var respmsg = '<form id="form-' + objectID + `"><B>Add a new ` + pathels[pathels.length-1] + `</B><table border=0>`
   var contract = getContract()
   if(typeof contract.paths[contractpath] != 'undefined') {
     if(typeof contract.paths[contractpath].post != 'undefined') {
@@ -353,7 +369,6 @@ function postObjectForm(path, contractpath, fieldclasses) {
         }
       }
       respmsg = respmsg + `</table><p style="	cursor: pointer;border: 1px solid;padding: 10px; box-shadow: 5px 10px #888888;width:100px" onclick="saveObject('` + objectID + `', '` + path + `', 'POST')" value='Post New'>Post New</p></form>`
-      ckEditor()
       return respmsg
     }
   }
@@ -366,13 +381,15 @@ function saveObject(objectID, path, method) {
     var elname = document.getElementById('form-' + objectID).elements[i].id
     var elclass =document.getElementById('form-' + objectID).elements[i].className
     if(elclass == 'editor') {
-      payload[elname] = editor.getData()
+      console.log(elname)
+      payload[elname] = eval(elname + `.getData()`)
     }
     else if (elname.length > 1) {
       payload[document.getElementById('form-' + objectID).elements[i].id] = document.getElementById('form-' + objectID).elements[i].value
     }
   }
   putObject(path, payload, method)
+  console.log(path, payload, method)
 }
 
 function putObject(path, payload, method) {
@@ -403,7 +420,7 @@ function putObject(path, payload, method) {
 	});
 }
 
-function delObj(path, objectLabel) {
+function delObject(path, objectLabel) {
   var text = ''
   if (confirm("Are you sure you want to delete " + objectLabel) == true) {
 //  if (confirm(text) == true) {
@@ -464,7 +481,10 @@ function makeid() {
     return result;
 }
 
-function getContract() {
+function getContract(force) {
+  if (typeof(window.sessionStorage.contract) != 'undefined' && force != 'force') {
+    return JSON.parse(window.sessionStorage.contract)
+  }
   var contract = $.ajax({
     url: uxapihost,
     async: false,
@@ -476,7 +496,7 @@ function getContract() {
           return text.error
 				}
 				else {
-          return text
+          window.sessionStorage.contract = text
 				}
     },
     error: function(err) {
@@ -701,9 +721,29 @@ function getFormats(contract, ref) {
 return pageclasses
 }
 
+function getSubCollections(path) {
+  contract = getContract()
+  var subcollections = []
+  var pathels = path.split('/')
+  contractpath = ''
+  for (var i =1; i <pathels.length; i ++) {
+    if(pathels[i].match(/^.{8}[-]/) != null) {
+      pathels[i] = '{' + pathels[i-1] + 'Id}'
+    }
+    contractpath = contractpath + '/' + pathels[i]
+  }
+  for (const [key, value] of Object.entries(contract.paths)) {
+    var keyEls = key.split('/')
+    var contractpathEls = contractpath.split('/')
+    if (keyEls.length == contractpathEls.length + 1 && key.startsWith(contractpath) == true) {
+      subcollections.push(keyEls[keyEls.length -1])
+    }
+  }
+  return subcollections
+}
+
 function renderTile(obj, listOptions) {
   var msg = ''
-  console.log(obj)
   var tileTemplate = `
   <div class="uxapitile">
     <h3>fTILETITLE</h3>
@@ -860,20 +900,22 @@ function uxapilogin() {
   }
 }
 
-function ckEditor() {
-  ClassicEditor
-    .create( document.querySelector( '.editor' ), {
-      plugin: ['Markdown', 'Base64UploadAdapter'],
-     licenseKey: '',
-     config: { height: '800px', fontFamily: 'Arial, Helvetica, sans-serif'},
-    } )
-    .then( editor => {
-      window.editor = editor;
-    } )
-    .catch( error => {
-//      console.error( 'Something went wrong with ckeditor' );
-  //    console.error( 'Please, report the following error on https://github.com/ckeditor/ckeditor5/issues with the build id and the error stack trace:' );
-  //    console.warn( 'Build id: myzmd7eray8w-unt8fr6ckh47' );
-  //    console.error( error );
-    } );
-  }
+function ckEditor(id) {
+    ClassicEditor
+      .create( document.querySelector( '#' + id ), {
+        plugin: ['Markdown', 'Base64UploadAdapter'],
+       licenseKey: '',
+       config: { height: '800px', fontFamily: 'Arial, Helvetica, sans-serif'},
+      } )
+      .then( editor => {
+        window[id] = editor;
+      } )
+      .catch( error => {
+  //      console.error( 'Something went wrong with ckeditor' );
+    //    console.error( 'Please, report the following error on https://github.com/ckeditor/ckeditor5/issues with the build id and the error stack trace:' );
+    //    console.warn( 'Build id: myzmd7eray8w-unt8fr6ckh47' );
+    //    console.error( error );
+  },
+ );
+
+}
