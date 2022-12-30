@@ -1,21 +1,42 @@
 # uxapieditor
 This is a javascript library of functions built to use to speed app development on the [UXAPI API-as-a-Service](https://uxapi.io)
 
-
 ## Configuration
-Three variables need to be defined:
+I kind of suck at includes so, in this current iteration, you'll need to add a few scripts to your HTML:
+
+```
+<meta charset="utf-8">
+<script src="https://code.jquery.com/jquery-3.6.1.min.js" crossorigin="anonymous"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/showdown/0.3.1/showdown.min.js"></script>
+<script type="text/javascript" src="uxapieditor/code/ckeditor/build/ckeditor.js"></script>
+<script type="text/javascript" src="/js/config.js"></script>
+<script type="text/javascript" src="uxapieditor/code/uxapieditor.js"></script>
+<link rel="stylesheet" href="/uxapieditor/css/uxapi.css">
+```
+
+I currently use `config.js` (listed above) to define three variables:
 
 * uxapihost: the host of your API (e.g. api.finch.uxapi.io)
 * clientID: the clientID which you can find in your Remote Dashboard on [UXAPI.io/dashboard](https://uxapi.io/dashboard)
 * clientSecret: the secret which is also on the [remote dashboard](https://uxapi.io/dashboard)
 
+The file looks like this:
+
+```
+const uxapihost = "https://api.penguin.uxapi.io"
+var clientID = 'zlun2lmrcvs9024o4fdtx6pgk06nb4ar'
+var clientSecret = '1omvctlb5r9uwtdx'
+```
+
+Now you may be saying, "Hey! you put your client and secret in the config!" but honestly that client and secret can't do anything except log you in -- you'll need claims that give you write privileges to do anything.  See [UXAPI.io Design an API](https://uxapi.io/design-overview.html) and my blog posting on [Securing your Credentials](https://uxapi.io/articles/7f6ffe80-7c99-11ed-9740-7f7a4b5b5475/Securing-your-Credentials)
+
 #### Formatting
 The library outputs with CSS classes from the `uxapi.css` file, also included in this repo. This allows you to modify the style as needed for your own project.
 
 #### Editor
-The rich editor for the `markdown` format used by UXAPI uses ckeditor.  There is a prebuilt ckeditor in this project, but be aware that this is only for ease-of-use and you should consider making your own build and, depending on your usage, getting a license.
+The rich editor for the `markdown` format used by UXAPI uses ckeditor.  There is a prebuilt ckEditor in this project, but be aware that this is only for ease-of-use and you should consider making your own build and, depending on your usage, getting a license.
 
-Because I'm not very good at includes, the editor needs an extra bit of code on each page where you're using markdown:
+And again, because I'm not very good at includes, the editor needs an extra bit of code on each page where you're using markdown:
 
 ```
 var ele = document.getElementsByClassName('editor');
@@ -24,17 +45,21 @@ for (var i=0; i< ele.length; i++ ) {
 }
 ```
 
-This will instantiate an editor for each field that is rendered using Markdown.
+This will instantiate an editor for each field that is rendered using Markdown. You should be able to just throw it at the bottom of your page.
 
 ## Authentication
 The library assumes you have an access token stored in `window.sessionStorage.token` which can be generated using standard OAuth flows, but we have a prebuilt process using the following functions:
 
 #### `refreshToken()`
-Uses the `window.sessionStorage.refresh` to get a new `access_token` and `refresh_token` and, if it fails, returns the login page from the API.  It's good practice to include this on any page where you want people to be authorized.
+Uses the `window.sessionStorage.refresh` to get a new `access_token` and `refresh_token` and, if it fails, returns the login page from the API. If it succeeds it returns an empty string.
 
-#### `uxapilogin()`
-Displays the login form from the `uxapihost` which then redirects back to the same page with an `authorization code` which is exchanged for an `access_token` which is THEN stored in the `window.sessionStorage.token`
+It's good practice to include this on any page where you want people to be authorized but to add a capture to send the consumer to a proper login flow (see [Get a Token](https://uxapi.io/howto/get-a-token.html))
 
+Example:  
+```
+var tokencheck = refreshToken()
+if (tokencheck.length > 1) {document.location = '/login.html'}
+```
 
 ## Basic API Object Rendering
 
