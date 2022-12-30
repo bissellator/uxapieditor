@@ -9,18 +9,18 @@ function returnObj(path) {
         xhr.setRequestHeader("Authorization", "Bearer " + window.sessionStorage.token)
       },
       success: function(text){
-  			  if(typeof(text.error) != 'undefined') {
+          if(typeof(text.error) != 'undefined') {
             console.log(text.error)
             return text.error
-  				}
-  				else {
+          }
+          else {
             return text
-  				}
+          }
       },
       error: function(err) {
           //console.log(err)
       }
-  	});
+    });
     return JSON.parse(obj.responseText)
 
   }
@@ -52,6 +52,19 @@ function listObjects(path, listOptions, format) {
   if (typeof(format) == 'undefined') {format = 'list'}
   if (typeof(listOptions) == 'undefined' || typeof(path) =='undefined' || typeof(listOptions) != 'object') {
     msg = msg + '<p>Please provide path and listOptions (see <a href="https://github.com/bissellator/uxapieditor/blob/main/README.md" target="_blank">README</A>)'
+    msg = msg + `<p>Available fields are<br /><pre>`
+    var tmp = getFormats(getContract(), getRef(pathToContractpath(path)))
+    for (const [key, value] of Object.entries(tmp)) {
+      msg = msg + key + `\n`
+    }
+    msg = msg + `</pre></p><p>JSON object expects the following<br /><pre>
+{
+  title: 'fieldname',
+  blurb: 'filedname',
+  img: 'fieldname',
+  link: 'localhost/somelink/{fieldname}/index.html?pathvar?{fieldname}'
+}
+</pre></p>`
     return msg;
   }
   else {
@@ -101,25 +114,18 @@ function editObjects(path) {
   var list = returnObj(path)
   var contractpath = ''
     var pathels = path.split('/')
-    contractpath = ''
-    for (var i =1; i <pathels.length; i++) {
-      if(pathels[i].match(/^.{8}[-]/) != null) {
-        pathels[i] = '{' + pathels[i-1] + 'Id}'
+    contractpath = pathToContractpath(path)
+    var contract = getContract()
+    if(typeof contract.paths[contractpath] != 'undefined') {
+      if(typeof contract.paths[contractpath].post != 'undefined') {
+        var ref = contract.paths[contractpath].post.requestBody.content["application/json"].schema["$ref"]
+        var refObj = resolver(contract, ref)
+        fieldclasses = getFormats(contract, ref)
       }
-      contractpath = contractpath + '/' + pathels[i]
-
-      var contract = getContract()
-      if(typeof contract.paths[contractpath] != 'undefined') {
-        if(typeof contract.paths[contractpath].post != 'undefined') {
-          var ref = contract.paths[contractpath].post.requestBody.content["application/json"].schema["$ref"]
-          var refObj = resolver(contract, ref)
-          fieldclasses = getFormats(contract, ref)
-        }
-        else if (typeof(contract.paths[contractpath].get) != 'undefined') {
-          var ref = contract.paths[contractpath].get.responses['200'].content["application/json"].schema["$ref"]
-          var refObj = resolver(contract, ref)
-          fieldclasses = getFormats(contract, refObj.properties.object['$ref'])
-        }
+      else if (typeof(contract.paths[contractpath].get) != 'undefined') {
+        var ref = contract.paths[contractpath].get.responses['200'].content["application/json"].schema["$ref"]
+        var refObj = resolver(contract, ref)
+        fieldclasses = getFormats(contract, refObj.properties.object['$ref'])
       }
     }
     if (typeof(list.objects) != 'undefined') {
@@ -195,6 +201,7 @@ function editObjects(path) {
 }
 
 function editObject(path, uxapidiv) {
+  console.log(path)
   if (typeof(fieldclasses) == 'undefined') {
     if (typeof(contractpath) == 'undefined') {
       var pathels = path.split('/')
@@ -236,7 +243,8 @@ function editObject(path, uxapidiv) {
 function renderEditObj(path, fieldclasses, object) {
   var basepath = path.split('?')[0]
   var objectID = object.objectID
-  var respmsg = `<form id="form-`+ objectID + `"><table border=0>`
+  var respmsg = `<span class="clickable" onclick="delObject('` + basepath + `/` + objectID +`', '`+ objectID +`')">&#128465; Delete</span><Br />`
+  respmsg = respmsg + `<form id="form-`+ objectID + `"><table border=0>`
   for (const [key, value] of Object.entries(object.object)) {
     var fieldclass="uxapitextarea"
     var fieldvalue = ""
@@ -290,8 +298,13 @@ function renderEditObj(path, fieldclasses, object) {
     }
   }
   respmsg = respmsg + `</table><p type="button" class="clickable" onclick="saveObject('` + objectID + `', '` + path + `', 'PUT')" value='Save'>Save</p></form>`
-  respmsg = respmsg + editObjects(basepath + '/' + getSubCollections(basepath))
-  respmsg = respmsg + postObjectForm(basepath + '/' + getSubCollections(basepath))
+  var tmp = editObjects(basepath + '/' + getSubCollections(basepath))
+  if (typeof(tmp) != 'undefined' && tmp.length > 0) {
+    respmsg = respmsg + `<p style="border-top:solid; border-bottom:solid #000"><B>Items in Subcollection ` + getSubCollections(basepath) + `</b></p>`
+    respmsg = respmsg + tmp
+    respmsg = respmsg + postObjectForm(basepath + '/' + getSubCollections(basepath))
+  }
+
   return respmsg
 
 }
@@ -312,7 +325,7 @@ function postObjectForm(path, fieldclasses) {
     contractpath = contractpath + '/' + pathels[i]
   }
   objectID = btoa(makeid())
-  var respmsg = '<form id="form-' + objectID + `"><B>Add a new ` + pathels[pathels.length-1] + `</B><table border=0>`
+  var respmsg = `<div id="` + objectID + `"><form id="form-` + objectID + `"><B>Add a new ` + pathels[pathels.length-1] + `</B><table border=0>`
   var contract = getContract()
   if(typeof contract.paths[contractpath] != 'undefined') {
     if(typeof contract.paths[contractpath].post != 'undefined') {
@@ -339,7 +352,7 @@ function postObjectForm(path, fieldclasses) {
         }
         if (fieldclasses[key].class == 'uxapi-markdown') fieldclass = 'editor'
         if (fieldclasses[key].type == 'select') {
-          respmsg = respmsg + "<tr><td>" + fieldlabel + `</td>
+          respmsg = respmsg + `<tr><td>` + fieldlabel + `</td>
             <td><select class="`+fieldclass+`" id="`+ key + `">`
             respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `">` + fieldclasses[key].options[e] + `</option>`
           for (var e =0; e < fieldclasses[key].options.length; e++) {
@@ -368,7 +381,7 @@ function postObjectForm(path, fieldclasses) {
           respmsg = respmsg + `<tr><td>` + fieldlabel + `</td><td><textarea class="`+fieldclass+`" id="`+ key + `">`+ fieldvalue + `</textarea></td></tr>`
         }
       }
-      respmsg = respmsg + `</table><p style="	cursor: pointer;border: 1px solid;padding: 10px; box-shadow: 5px 10px #888888;width:100px" onclick="saveObject('` + objectID + `', '` + path + `', 'POST')" value='Post New'>Post New</p></form>`
+      respmsg = respmsg + `</table></div><p style="	cursor: pointer;border: 1px solid;padding: 10px; box-shadow: 5px 10px #888888;width:100px" onclick="saveObject('` + objectID + `', '` + path + `', 'POST')" value='Post New'>Post New</p></form>`
       return respmsg
     }
   }
@@ -388,8 +401,16 @@ function saveObject(objectID, path, method) {
       payload[document.getElementById('form-' + objectID).elements[i].id] = document.getElementById('form-' + objectID).elements[i].value
     }
   }
-  putObject(path, payload, method)
-  console.log(path, payload, method)
+  var respObj = putObject(path, payload, method)
+  if (method == 'POST') {
+    respObj = JSON.parse(respObj.responseText)
+    if (typeof(respObj.objectID) != 'undefined') {
+      var resp = editObject(path + '/' + respObj.objectID)
+      resp = resp + postObjectForm(path)
+      console.log("hi", path + '/' + respObj.objectID)
+      document.getElementById(objectID).innerHTML = resp
+    }
+  }
 }
 
 function putObject(path, payload, method) {
@@ -404,20 +425,20 @@ function putObject(path, payload, method) {
       xhr.setRequestHeader("Authorization", "Bearer " + window.sessionStorage.token)
     },
     success: function(text){
-			  if(typeof(text.error) != 'undefined') {
+        if(typeof(text.error) != 'undefined') {
           console.log(text.error)
           return text.error
-				}
-				else {
+        }
+        else {
           try {
             postObjectCleanup( path, text )
           }catch {}
-				}
+        }
     },
     error: function(err) {
         console.log(err)
     }
-	});
+  });
 }
 
 function delObject(path, objectLabel) {
@@ -432,15 +453,15 @@ function delObject(path, objectLabel) {
         xhr.setRequestHeader("Authorization", "Bearer " + window.sessionStorage.token)
       },
       success: function(text){
-  			  if(typeof(text.error) != 'undefined') {
+          if(typeof(text.error) != 'undefined') {
             console.log(text.error)
             return text.error
-  				}
-  				else {
+          }
+          else {
             try {
               postObjectCleanup( path, text )
             }catch {}
-  				}
+          }
       },
       error: function(err) {
           console.log(err)
@@ -449,7 +470,7 @@ function delObject(path, objectLabel) {
           }catch {}
 
       }
-  	});
+    });
   } else {
     text = "You canceled!";
   }
@@ -491,18 +512,18 @@ function getContract(force) {
     type:'GET',
     dataType: 'text',
     success: function(text){
-			  if(typeof(text.error) != 'undefined') {
+        if(typeof(text.error) != 'undefined') {
           console.log(text.error)
           return text.error
-				}
-				else {
+        }
+        else {
           window.sessionStorage.contract = text
-				}
+        }
     },
     error: function(err) {
         console.log(err)
     }
-	});
+  });
   return JSON.parse(contract.responseText)
 }
 
@@ -646,14 +667,7 @@ function resolver (contract, ref) {
 
 function getRef(path,contractpath) {
   if (typeof(contractpath) == 'undefined') {
-    var pathels = path.split('/')
-    contractpath = ''
-    for (var i =1; i <pathels.length; i ++) {
-      if(pathels[i].match(/^.{8}[-]/) != null) {
-        pathels[i] = '{' + pathels[i-1] + 'Id}'
-      }
-      contractpath = contractpath + '/' + pathels[i]
-    }
+    contractpath = pathToContractpath(path)
   }
   var contract = getContract()
   if(typeof contract.paths[contractpath] != 'undefined') {
@@ -662,6 +676,18 @@ function getRef(path,contractpath) {
       return ref
     }
   }
+}
+
+function pathToContractpath(path) {
+var pathels = path.split('/')
+var contractpath = ''
+for (var i =1; i <pathels.length; i ++) {
+  if(pathels[i].match(/^.{8}[-]/) != null) {
+    pathels[i] = '{' + pathels[i-1] + 'Id}'
+  }
+  contractpath = contractpath + '/' + pathels[i]
+}
+return contractpath
 }
 
 function parseJWT(jwt) {
@@ -725,13 +751,7 @@ function getSubCollections(path) {
   contract = getContract()
   var subcollections = []
   var pathels = path.split('/')
-  contractpath = ''
-  for (var i =1; i <pathels.length; i ++) {
-    if(pathels[i].match(/^.{8}[-]/) != null) {
-      pathels[i] = '{' + pathels[i-1] + 'Id}'
-    }
-    contractpath = contractpath + '/' + pathels[i]
-  }
+  contractpath = pathToContractpath(path)
   for (const [key, value] of Object.entries(contract.paths)) {
     var keyEls = key.split('/')
     var contractpathEls = contractpath.split('/')
@@ -822,26 +842,26 @@ function refreshToken() {
       xhr.setRequestHeader("Authorization", "Basic "+ btoa(clientID + ':' + clientSecret));
     },
     success: function(text){
-			  if(typeof(text.error) != 'undefined') {
+        if(typeof(text.error) != 'undefined') {
           return("hi")
-				}
-				else {
+        }
+        else {
           text = JSON.parse(text)
           window.sessionStorage.token = text.access_token
           window.sessionStorage.refresh = text.refresh_token
-				}
+        }
     },
     error: function(err) {
       return err
         //console.log(err)
     }
-	});
+  });
   var response = JSON.parse(response.responseText)
   if (typeof(response.error) != "undefined") {
     return uxapilogin()
   }
   else {
-    return response
+    return
   }
 }
 
