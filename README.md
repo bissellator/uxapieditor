@@ -1,5 +1,5 @@
 # uxapieditor
-This is a javascript library of functions built to use to speed app development on the [UXAPI API-as-a-Service](https://uxapi.io)
+This is a javascript library of functions built to use to speed app development on the [UXAPI API-as-a-Service](https://uxapi.io).  You can set up a demo environment for your API in literally about 5 minutes and then use these tools to start interacting with your API data and build simple, secure apps. 
 
 ## Configuration
 I kind of suck at includes so, in this current iteration, you'll need to add a few scripts to your HTML:
