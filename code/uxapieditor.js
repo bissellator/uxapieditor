@@ -861,7 +861,7 @@ function refreshToken() {
     return uxapilogin()
   }
   else {
-    return
+    return ''
   }
 }
 
@@ -905,17 +905,18 @@ function uxapilogin() {
         }catch {
           console.log(text)
           var msg = `Something went wrong, please <a href=./login.html>try logging in again</a>`
-          document.getElementById("loginbox").innerHTML = msg
+          return msg
         }
         return;
       },
       error: function(err) {
         var msg = `Something went wrong, please <a href=./login.html>try logging in again</a>`
-        document.getElementById("loginbox").innerHTML = msg
+        return msg
         console.log(err)
         return;
       }
     });
+    if (typeof(params.code) != 'undefined' && typeof(response) == 'undefined') { return "I think you have a bad code... up there... in the query params..."}
     return response
   }
 }
