@@ -209,10 +209,31 @@ function editObject(path, uxapidiv) {
     }
     var contract = getContract()
     if(typeof contract.paths[contractpath] != 'undefined') {
-      if(typeof contract.paths[contractpath].put != 'undefined') {
-        var ref = contract.paths[contractpath].put.requestBody.content["application/json"].schema["$ref"]
+      if(typeof contract.paths[contractpath].get != 'undefined') {
+        var ref = contract.paths[contractpath].get.responses["200"].content["application/json"].schema["$ref"]
         var refObj = resolver(contract, ref)
-          fieldclasses = getFormats(contract, ref)
+        if (typeof(refObj.properties.objects) != 'undefined') {
+          if (typeof(refObj.properties.objects.type) != 'undefined') {
+            if (refObj.properties.objects.type == 'array') {
+              ref = refObj.properties.objects.items['$ref']
+              var refObj = resolver(contract, ref)
+              if (typeof(refObj.properties.object) != 'undefined') {
+                if (typeof(refObj.properties.object['$ref']) != 'undefined') {
+                  ref = refObj.properties.object['$ref']
+                }
+              }
+            }
+          }
+        }
+
+        if (typeof(refObj.properties.object) != 'undefined') {
+          if (typeof(refObj.properties.object['$ref']) != 'undefined') {
+            ref = refObj.properties.object['$ref']
+          }
+        }
+
+        fieldclasses = getFormats(contract, ref)
+
         }
       }
     }
@@ -382,7 +403,6 @@ function saveObject(objectID, path, method) {
     var elname = document.getElementById('form-' + objectID).elements[i].id
     var elclass =document.getElementById('form-' + objectID).elements[i].className
     if(elclass == 'editor') {
-      console.log(elname)
       payload[elname] = eval(elname + `.getData()`)
     }
     else if (elname.length > 1) {
@@ -395,7 +415,6 @@ function saveObject(objectID, path, method) {
     if (typeof(respObj.objectID) != 'undefined') {
       var resp = editObject(path + '/' + respObj.objectID)
       resp = resp + postObjectForm(path)
-      console.log("hi", path + '/' + respObj.objectID)
       document.getElementById(objectID).innerHTML = resp
     }
   }
@@ -473,9 +492,7 @@ function encodeImageFileAsBase64(element, form, div) {
   let reader = new FileReader();
   reader.onloadend = function() {
     document.getElementById(div + '.' + form).src = reader.result
-//    document.getElementById(div).value = reader.result
     document.getElementById(form).elements[div].value = reader.result
-//    console.log(reader.result)
   }
   reader.readAsDataURL(file);
 }
