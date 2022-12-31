@@ -1,5 +1,5 @@
 # uxapieditor
-This is a javascript library of functions built to use to speed app development on the [UXAPI API-as-a-Service](https://uxapi.io).  You can set up a demo environment for your API in literally about 5 minutes and then use these tools to start interacting with your API data and build simple, secure apps. 
+This is a javascript library of functions built to use to speed app development on the [UXAPI API-as-a-Service](https://uxapi.io).  You can set up a demo environment for your API in literally about 5 minutes and then use these tools to start interacting with your API data and build simple, secure apps.
 
 ## Configuration
 I kind of suck at includes so, in this current iteration, you'll need to add a few scripts to your HTML:
@@ -11,7 +11,10 @@ I kind of suck at includes so, in this current iteration, you'll need to add a f
 <script type="text/javascript" src="uxapieditor/code/ckeditor/build/ckeditor.js"></script>
 <script type="text/javascript" src="/js/config.js"></script>
 <script type="text/javascript" src="uxapieditor/code/uxapieditor.js"></script>
-<link rel="stylesheet" href="/uxapieditor/css/uxapi.css">
+<link rel="stylesheet" href="/uxapieditor/code/uxapi.css">
+```
+
+```/uxapi.css">
 ```
 
 I currently use `config.js` (listed above) to define three variables:
@@ -130,6 +133,8 @@ Example:
 `delObject  ('/v1/blogs/81a3722e-4975-4cf7-8940-89859666b3f8', 'My Adventures in Amsterdam')`
 
 `objectLabel` is optionally used to provide a human readable warning "you are going to delete {objectLabel}.." -- if an `objectLabel` is not provided the UUID for the `objectID` will be displayed.
+
+After it deletes the object, the script tries to call to a function `postObjectCleanup(path, text)` -- this allows you to write a custom catch to decide what to do with the UI after the object is no longer around to be displayed.
 
 #### `getContract()`
 Returns the API contract from `uxapihost` as a JSON object.
