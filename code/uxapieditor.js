@@ -1,5 +1,5 @@
 function returnObj(path) {
-  if (typeof(window.sessionStorage.token) != 'undefined') {
+    if (typeof(window.sessionStorage.token) != 'undefined') {
     var obj = $.ajax({
       url: uxapihost + path,
       async: false,
@@ -188,20 +188,14 @@ function editObjects(path) {
             respmsg = respmsg + "<tr><td>" + key + `</td><td><textarea class="` + fieldclass + `" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `/` + objectID + `', 'PUT')">` + value + `</textarea></td></tr>`
           }
         }
-        respmsg = respmsg + `</table></form></div>`
-        var sublink = ''
-        if (typeof(subCollection) != 'undefined' && typeof(subCollectionTarget) != 'undefined') {
-          var subpath = path.split('?')[0] + `/` + objectID + `/` + subCollection
-          sublink = `<div onclick="document.getElementById('`+ subCollectionTarget + `').innerHTML= editObjects('`+ subpath + `', '`+subLabel+`')">` + subCollection + `</div>`
-        }
-        resp = resp+respmsg + sublink
+        respmsg = respmsg + `</table></form><Br /></div>`
+        resp = resp+respmsg
       }
     }
   return resp
 }
 
 function editObject(path, uxapidiv) {
-  console.log(path)
   if (typeof(fieldclasses) == 'undefined') {
     if (typeof(contractpath) == 'undefined') {
       var pathels = path.split('/')
@@ -243,7 +237,7 @@ function editObject(path, uxapidiv) {
 function renderEditObj(path, fieldclasses, object) {
   var basepath = path.split('?')[0]
   var objectID = object.objectID
-  var respmsg = `<span class="clickable" onclick="delObject('` + basepath + `/` + objectID +`', '`+ objectID +`')">&#128465; Delete</span><Br />`
+  var respmsg = `<span class="clickable" onclick="delObject('` + basepath + `/` +`', '`+ objectID +`')">&#128465; Delete</span><Br />`
   respmsg = respmsg + `<form id="form-`+ objectID + `"><table border=0>`
   for (const [key, value] of Object.entries(object.object)) {
     var fieldclass="uxapitextarea"
@@ -302,20 +296,14 @@ function renderEditObj(path, fieldclasses, object) {
   if (typeof(tmp) != 'undefined' && tmp.length > 0) {
     respmsg = respmsg + `<p style="border-top:solid; border-bottom:solid #000"><B>Items in Subcollection ` + getSubCollections(basepath) + `</b></p>`
     respmsg = respmsg + tmp
-    respmsg = respmsg + postObjectForm(basepath + '/' + getSubCollections(basepath))
   }
+  respmsg = respmsg + postObjectForm(basepath + '/' + getSubCollections(basepath))
 
   return respmsg
 
 }
 
 function postObjectForm(path, fieldclasses) {
-  var tokenmsg = (refreshToken())
-  if (typeof(tokenmsg) == 'string') {
-    return tokenmsg
-  }
-  try {JSON.parse(tokenmsg); }catch {
-  }
   var pathels = path.split('/')
   contractpath = ''
   for (var i =1; i <pathels.length; i ++) {
@@ -381,7 +369,7 @@ function postObjectForm(path, fieldclasses) {
           respmsg = respmsg + `<tr><td>` + fieldlabel + `</td><td><textarea class="`+fieldclass+`" id="`+ key + `">`+ fieldvalue + `</textarea></td></tr>`
         }
       }
-      respmsg = respmsg + `</table></div><p style="	cursor: pointer;border: 1px solid;padding: 10px; box-shadow: 5px 10px #888888;width:100px" onclick="saveObject('` + objectID + `', '` + path + `', 'POST')" value='Post New'>Post New</p></form>`
+      respmsg = respmsg + `</table><p style="	cursor: pointer;border: 1px solid;padding: 10px; box-shadow: 5px 10px #888888;width:100px" onclick="saveObject('` + objectID + `', '` + path + `', 'POST')" value='Post New'>Post New</p></form></div>`
       return respmsg
     }
   }
@@ -530,7 +518,6 @@ function getContract(force) {
 function renderContract() {
   var msg = ""
   var contract = getContract()
-  contract = JSON.parse(contract.responseText)
   msg = msg + `<h5>` +contract.info.title + `</h5>`
   msg = msg + `<p>` + contract.info.description + '</p>'
   var msg =  msg+ "<hr /><p>Here are your API objects:</p>"
@@ -591,7 +578,6 @@ function renderContract() {
 function listPaths() {
   var msg = ""
   var contract = getContract()
-  contract = JSON.parse(contract.responseText)
   msg = msg + `<h5>` +contract.info.title + `</h5>`
   msg = msg + `<p>` + contract.info.description + '</p>'
   var msg =  msg+ "<hr /><p>Here are your API objects:</p>"
@@ -900,7 +886,7 @@ function uxapilogin() {
           if (typeof(json.access_token) != 'undefined') {
             window.sessionStorage.token = json.access_token
             window.sessionStorage.refresh = json.refresh_token
-            window.location.href = '/admin/'
+            window.location.href = window.location.href
           }
         }catch {
           console.log(text)
@@ -916,7 +902,7 @@ function uxapilogin() {
         return;
       }
     });
-    if (typeof(params.code) != 'undefined' && typeof(response) == 'undefined') { return "I think you have a bad code... up there... in the query params..."}
+    if (typeof(params.code) != 'undefined' && typeof(response) == 'undefined') { return "I think you have a bad auth code... up there... in the query params..."}
     return response
   }
 }
