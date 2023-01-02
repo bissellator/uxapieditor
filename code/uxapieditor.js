@@ -1,5 +1,6 @@
 function returnObj(path) {
     if (typeof(window.sessionStorage.token) != 'undefined') {
+      refreshToken()
     var obj = $.ajax({
       url: uxapihost + path,
       async: false,
@@ -75,7 +76,7 @@ function listObjects(path, listOptions, format) {
     var contract = getContract()
     var fieldclasses = getFormats(contract, ref)
 
-    var divhead  = `<div class="uxapitiles">`
+    var divhead  = `<div class="uxapigridcontainer">`
     if (format == 'tiles') {
 
       if (typeof(obj.object) != 'undefined') {
@@ -85,10 +86,10 @@ function listObjects(path, listOptions, format) {
       else {
         msg = msg + divhead
         for (var i = 0; i < obj.objects.length; i++) {
-          if (parseInt((i+1)/4) == ((i)/4) && i > 0) {
-              console.log(parseInt(i/4) +" "+ (i/4))
-              msg = msg + "</div>" + divhead
-            }
+//          if (parseInt((i+1)/4) == ((i)/4) && i > 0) {
+//              console.log(parseInt(i/4) +" "+ (i/4))
+//              msg = msg + "</div>" + divhead
+//            }
             msg = msg + renderTile(obj.objects[i], listOptions)
           }
         }
@@ -279,7 +280,7 @@ function renderEditObj(path, fieldclasses, object) {
     if (fieldclasses[key].class == 'uxapi-markdown') fieldclass = 'editor'
 
     if (fieldclasses[key].type == 'select') {
-      respmsg = respmsg + "<tr><td>" + fieldlabel + `</td>
+      respmsg = respmsg + "<tr><td valign=top>" + fieldlabel + `</td>
         <td><select class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `', 'PUT')">`
         respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `">` + fieldclasses[key].options[e] + `</option>`
       for (var e =0; e < fieldclasses[key].options.length; e++) {
@@ -290,7 +291,7 @@ function renderEditObj(path, fieldclasses, object) {
       respmsg = respmsg + `</select></td></tr>`
     }
     else if (fieldclasses[key].type == 'boolean') {
-      respmsg = respmsg + "<tr><td>" + fieldlabel + `</td>
+      respmsg = respmsg + "<tr><td valign=top><B>" + fieldlabel + `</B></td>
         <td><select class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `', 'PUT')">`
         respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `">` + fieldclasses[key].options[e] + `</option>`
       for (var e =0; e < fieldclasses[key].options.length; e++) {
@@ -301,7 +302,7 @@ function renderEditObj(path, fieldclasses, object) {
       respmsg = respmsg + `</select></td></tr>`
     }
     else if (fieldclasses[key].class == 'uxapi-image') {
-      respmsg = respmsg + `<tr><td>` + fieldlabel + `</td>`
+      respmsg = respmsg + `<tr><td valign=top><B>` + fieldlabel + `</B></td>`
       respmsg = respmsg + `<td>
         <img src="` + value + `" class="uxapi-image" id="`+key+`.form-` + objectID +`"><br/>
         <input type="file" onchange="encodeImageFileAsBase64(this, 'form-` + objectID + `', '` + key + `');saveObject('` + objectID + `', '` + basepath + `', 'PUT')" />
@@ -309,7 +310,7 @@ function renderEditObj(path, fieldclasses, object) {
         </td></tr>`
     }
     else {
-      respmsg = respmsg + "<tr><td>" + fieldlabel + `</td><td><textarea class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath  + `', 'PUT')">` + value + `</textarea></td>`
+      respmsg = respmsg + "<tr><td valign=top><B>" + fieldlabel + `</b></td><td><textarea class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath  + `', 'PUT')">` + value + `</textarea></td>`
     }
   }
   respmsg = respmsg + `</table><p type="button" class="clickable" onclick="saveObject('` + objectID + `', '` + path + `', 'PUT')" value='Save'>Save</p></form>`
@@ -533,10 +534,11 @@ function getContract(force) {
 }
 
 function renderContract() {
-  var msg = ""
+  var msg  = ''
   var contract = getContract()
   msg = msg + `<h5>` +contract.info.title + `</h5>`
-  msg = msg + `<p>` + contract.info.description + '</p>'
+  msg = msg + `<p>` + contract.info.description + '<br>'
+  msg = msg + `(<a href="` + uxapihost + `" target="_blank">OpenAPI Document</A>)</p>`
   var msg =  msg+ "<hr /><p>Here are your API objects:</p>"
   var paths = []
   for (const [key, value] of Object.entries(contract.paths)) {
@@ -767,24 +769,15 @@ function getSubCollections(path) {
 
 function renderTile(obj, listOptions) {
   var msg = ''
+
   var tileTemplate = `
-  <div class="uxapitile">
-    <h3>fTILETITLE</h3>
-    <ul style="list-style-type:none;padding:0;margin:0;" class="clickable">
-      <li class="w3-padding-16" class="clickable" onclick="location.href='fTILETARGET'">
-        <img src="fTILEIMAGE">
-        <span>fTILEBLURB</span>
-      </li>
-    </ul>
+  <div class="uxapigriditem clickable" onclick="location.href='fTILETARGET'">
+      <img src="fTILEIMAGE" style="width:100%" /><br/>
+      <B>fTILETITLE</B><br/>
+      fTILEBLURB
   </div>
   `
-  tileTemplate = `
-  <div class="uxapitile" style="cursor:pointer" onclick="location.href='fTILETARGET'">
-    <img src="fTILEIMAGE" alt="fTILETITLE" style="width:100%">
-    <h3>fTILETITLE</h3>
-    <p>fTILEBLURB</p>
-  </div>
-  `
+
   var tmp = tileTemplate;
   var link = listOptions.link
   for (const [key, value] of Object.entries(obj.object)) {
