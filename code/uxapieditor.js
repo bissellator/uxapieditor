@@ -265,6 +265,11 @@ function renderEditObj(path, fieldclasses, object) {
     var fieldclass="uxapitextarea"
     var fieldvalue = ""
     var fieldlabel = key
+    if (typeof(fieldclasses[key]) == 'undefined') {
+      fieldclasses[key] = {
+        class: "uxapi-text"
+      }
+    }
     if (typeof(fieldclasses[key]) != 'undefined') {
       if(typeof(fieldclasses[key].class) != 'undefined') {
         fieldclass = fieldclasses[key].class
