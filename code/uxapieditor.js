@@ -196,7 +196,7 @@ function editObjects(path) {
   return resp
 }
 
-function editObject(path, uxapidiv) {
+function editObject(path, formatstr) {
   if (typeof(fieldclasses) == 'undefined') {
     if (typeof(contractpath) == 'undefined') {
       var pathels = path.split('/')
@@ -247,13 +247,12 @@ function editObject(path, uxapidiv) {
     if (typeof(object.error) != 'undefined') {
       return object.error
     }
-    if (typeof(uxapidiv) == 'undefined') {
-      return renderEditObj(path, fieldclasses, object)
+    if (formatstr == 'raw') {
+      for (const [key, value] of Object.entries(fieldclasses)) {
+        fieldclasses[key].class = 'uxapi-textarea'
+      }
     }
-    else {
-      document.getElementById(uxapidiv).innerHTML = renderEditObj(path, fieldclasses, object)
-      return
-    }
+    return renderEditObj(path, fieldclasses, object)
 }
 
 function renderEditObj(path, fieldclasses, object) {
@@ -389,7 +388,7 @@ function postObjectForm(path, fieldclasses) {
           respmsg = respmsg + `<td>
             <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7" class="uxapi-image" id="`+key+`.form-` + objectID + `"><br/>
             <input type="file" onchange="encodeImageFileAsBase64(this, 'form-` + objectID + `', '` + key + `')" />
-            <textarea id="`+key+`" style="visiblity:hidden; height:0px;width:0px;" ></textarea>
+            <textarea id="`+key+`" style="visibility:hidden !important; height:0px;width:0px;" hidden></textarea>
             </td></tr>`
         }
         else {
@@ -774,10 +773,10 @@ function getSubCollections(path) {
 
 function renderTile(obj, listOptions) {
   var msg = ''
-
+  var imagestyle = "width:100%"
   var tileTemplate = `
   <div class="uxapigriditem clickable" onclick="location.href='fTILETARGET'">
-      <img src="fTILEIMAGE" style="width:100%" /><br/>
+      <img src="fTILEIMAGE" style="fIMAGESTYLE" /><br/>
       <B>fTILETITLE</B><br/>
       fTILEBLURB
   </div>
@@ -795,13 +794,14 @@ function renderTile(obj, listOptions) {
     var rE2 = new RegExp(rE, 'g')
     link = link.replace(rE2, obj.objectID)
   }
-  if (typeof(listOptions.img) == 'undefined') {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}catch{}}
-  else if (listOptions.img == null) {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}catch{}}
-  else if (listOptions.img.length == 0) {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}catch{}}
-  if (obj.object[listOptions.img].length == 0 ) {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}catch{}}
+  if (typeof(listOptions.img) == 'undefined') {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"; imagestyle = "width:0px;height:0px"}catch{}}
+  else if (listOptions.img == null) {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"; imagestyle = "width:0px;height:0px"}catch{}}
+  else if (listOptions.img.length == 0) {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"; imagestyle = "width:0px;height:0px"}catch{}}
+  if (obj.object[listOptions.img].length == 0 ) {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"; imagestyle = "width:0px;height:0px"}catch{}}
   tmp = tmp.replace(/fTILETITLE/g, obj.object[listOptions.title])
   tmp = tmp.replace(/fTILEBLURB/g, obj.object[listOptions.blurb])
   tmp = tmp.replace(/fTILEIMAGE/g, obj.object[listOptions.img])
+  tmp = tmp.replace(/IMAGESTYLE/g, imagestyle)
   tmp = tmp.replace(/fTILETARGET/g, link)
   msg = msg + tmp
   return msg
@@ -933,10 +933,9 @@ function ckEditor(id) {
         window[id] = editor;
       } )
       .catch( error => {
-  //      console.error( 'Something went wrong with ckeditor' );
+        console.error( 'Something went wrong with ckeditor' );
     //    console.error( 'Please, report the following error on https://github.com/ckeditor/ckeditor5/issues with the build id and the error stack trace:' );
-    //    console.warn( 'Build id: myzmd7eray8w-unt8fr6ckh47' );
-    //    console.error( error );
+        console.error( error );
   },
  );
 

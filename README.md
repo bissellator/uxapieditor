@@ -1,6 +1,8 @@
 # uxapieditor
 This is a javascript library of functions built to use to speed app development on the [UXAPI API-as-a-Service](https://uxapi.io).  You can set up a demo environment for your API in literally about 5 minutes and then use these tools to start interacting with your API data and build simple, secure apps.
 
+Because UXAPI exposes the API contract at the root of every API, this library assumes it can retrieve contract and that the contract will follow the [UXAPI Standards](https://uxapi.io/articles/6f51ee20-1b99-11ed-9fed-4d4f74c3731b/Our-API-Standards) for things like formats and overall API structure.
+
 ## Configuration
 I kind of suck at includes so, in this current iteration, you'll need to add a few scripts to your HTML:
 
@@ -117,7 +119,7 @@ The `postObjectForm()` function is tightly coupled to the UXAPI API Contract sta
 The object returned is an HTML div with a unique identifier (e.g. `<div id="MTVZYVJIeUtKM1dYWGFMN09sTkNCZFF4N1VzVVlq">`); as you add items to your collection, they will appear as editable objects within the same div.
 
 
-#### `editObject(path)`
+#### `editObject(path, format)`
 Returns an HTML form formatted based on the openAPI contarct schemas and populated with the object in the `path`. (Eventually this will automatically swtich between objects and collections but for now it's a single object)
 
 Example:
@@ -125,6 +127,7 @@ Example:
 
 This will return a form that auto-saves as you move focus from one field to another (bug: you need to press "save" when editing rich text fields.) Each field is contained in a div using the objectID as the div id (e.g. `<div id="665d67e5-a501-430a-abcf-79722701be47">`)
 
+Optionally you can pass the `format` as "raw" and it will return all fields as textareas, ignoring the formats included in the contract.
 
 #### `delObject(path, objectLabel)`
 Deletes the object located at the `path` -- this is used by the `editObject()` and `editObjects()` functions but can also be called directly.
