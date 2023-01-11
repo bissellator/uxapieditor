@@ -233,12 +233,11 @@ function editObject(path, formatstr) {
           }
         }
 
-        fieldclasses = getFormats(contract, ref)
+          fieldclasses = getFormats(contract, ref)
 
         }
       }
     }
-
     var object = returnObj(path)
     if (typeof(object.objects) != 'undefined') {
       msg = "Use editObjects(path) for now... (that's with an s)"
@@ -260,11 +259,11 @@ function renderEditObj(path, fieldclasses, object) {
   var objectID = object.objectID
   var respmsg = `<span class="clickable" onclick="delObject('` + basepath + `/` +`', '`+ objectID +`')">&#128465; Delete</span><Br />`
   respmsg = respmsg + `<form id="form-`+ objectID + `"><table border=0>`
-  for (const [key, value] of Object.entries(object.object)) {
+  for (const [key, value] of Object.entries(fieldclasses)) {
     var fieldclass="uxapitextarea"
     var fieldvalue = ""
     var fieldlabel = key
-    if (typeof(fieldclasses[key]) == 'undefined') {
+    if (typeof(object.object[key]) == 'undefined') {
       fieldclasses[key] = {
         class: "uxapi-text"
       }
@@ -308,13 +307,13 @@ function renderEditObj(path, fieldclasses, object) {
     else if (fieldclasses[key].class == 'uxapi-image') {
       respmsg = respmsg + `<tr><td valign=top><B>` + fieldlabel + `</B></td>`
       respmsg = respmsg + `<td>
-        <img src="` + value + `" class="uxapi-image" id="`+key+`.form-` + objectID +`"><br/>
+        <img src="` + object.object[key] + `" class="uxapi-image" id="`+key+`.form-` + objectID +`"><br/>
         <input type="file" onchange="encodeImageFileAsBase64(this, 'form-` + objectID + `', '` + key + `');saveObject('` + objectID + `', '` + basepath + `', 'PUT')" />
-        <textarea id="`+key+`" style="visibility:hidden;height:0px;width:0px">`+ value + `</textarea>
+        <textarea id="`+key+`" style="visibility:hidden;height:0px;width:0px">`+ object.object[key] + `</textarea>
         </td></tr>`
     }
     else {
-      respmsg = respmsg + "<tr><td valign=top><B>" + fieldlabel + `</b></td><td><textarea class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath  + `', 'PUT')">` + value + `</textarea></td>`
+      respmsg = respmsg + "<tr><td valign=top><B>" + fieldlabel + `</b></td><td><textarea class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath  + `', 'PUT')">` + object.object[key] + `</textarea></td>`
     }
   }
   respmsg = respmsg + `</table><p type="button" class="clickable" onclick="saveObject('` + objectID + `', '` + path + `', 'PUT')" value='Save'>Save</p></form>`
@@ -346,7 +345,7 @@ function postObjectForm(path, fieldclasses) {
       var ref = contract.paths[contractpath].post.requestBody.content["application/json"].schema["$ref"]
       var refObj = resolver(contract, ref)
       if (typeof(fieldclasses) == 'undefined') {
-        fieldclasses = getFormats(contract, ref)
+          fieldclasses = getFormats(contract, ref)
       }
       for (const [key, value] of Object.entries(refObj.properties)) {
         var fieldclass="uxapi-textarea"
@@ -720,7 +719,7 @@ function parseJWT(jwt) {
   return json;
 }
 
-function getFormats(contract, ref) {
+  function getFormats(contract, ref) {
   var msg = ""
   var refObj = (resolver(contract, ref))
   refObj = refObj.properties
