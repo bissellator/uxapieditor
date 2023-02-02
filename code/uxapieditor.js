@@ -54,7 +54,7 @@ function listObjects(path, listOptions, format) {
   if (typeof(listOptions) == 'undefined' || typeof(path) =='undefined' || typeof(listOptions) != 'object') {
     msg = msg + '<p>Please provide path and listOptions (see <a href="https://github.com/bissellator/uxapieditor/blob/main/README.md" target="_blank">README</A>)'
     msg = msg + `<p>Available fields are<br /><pre>`
-    var tmp = getFormats(getContract(), getRef(pathToContractpath(path)))
+    var tmp = getFormats(getContract(), getRef(path, pathToContractpath(path)))
     for (const [key, value] of Object.entries(tmp)) {
       msg = msg + key + `\n`
     }
@@ -283,12 +283,12 @@ function renderEditObj(path, fieldclasses, object) {
     if (fieldclasses[key].class == 'uxapi-markdown') fieldclass = 'editor'
 
     if (fieldclasses[key].type == 'select') {
-      respmsg = respmsg + "<tr><td valign=top>" + fieldlabel + `</td>
+      respmsg = respmsg + "<tr><td valign=top><b>" + fieldlabel + `</b></td>
         <td><select class="`+fieldclass+`" id="`+ key + `" onchange="saveObject('` + objectID + `', '` + basepath + `', 'PUT')">`
         respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `">` + fieldclasses[key].options[e] + `</option>`
       for (var e =0; e < fieldclasses[key].options.length; e++) {
         var selected = ''
-        if (fieldclasses[key].options[e] == value) {selected = 'selected'}
+        if (fieldclasses[key].options[e] == object.object[key]) {selected = 'selected'}
         respmsg = respmsg + `<option value="` + fieldclasses[key].options[e] + `" ` + selected +`>` + fieldclasses[key].options[e] + `</option>`
       }
       respmsg = respmsg + `</select></td></tr>`
@@ -454,6 +454,8 @@ function putObject(path, payload, method) {
 
 function delObject(path, objectLabel) {
   var text = ''
+  if (path.slice(-1) == '/') {path = path.substring(0, path.length - 1);}
+  console.log(path)
   if (confirm("Are you sure you want to delete " + objectLabel) == true) {
 //  if (confirm(text) == true) {
     return $.ajax({
@@ -475,7 +477,7 @@ function delObject(path, objectLabel) {
           }
       },
       error: function(err) {
-          console.log(err)
+          console.log(path, err)
           try {
             postObjectCleanup( path, err )
           }catch {}
@@ -673,7 +675,7 @@ function resolver (contract, ref) {
   return myobj;
 }
 
-function getRef(path,contractpath) {
+function getRef(path, contractpath) {
   if (typeof(contractpath) == 'undefined') {
     contractpath = pathToContractpath(path)
   }
@@ -681,6 +683,10 @@ function getRef(path,contractpath) {
   if(typeof contract.paths[contractpath] != 'undefined') {
     if(typeof contract.paths[contractpath].post != 'undefined') {
       var ref = contract.paths[contractpath].post.requestBody.content["application/json"].schema["$ref"]
+      return ref
+    }
+    if(typeof contract.paths[contractpath].put != 'undefined') {
+      var ref = contract.paths[contractpath].put.requestBody.content["application/json"].schema["$ref"]
       return ref
     }
   }
