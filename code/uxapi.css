@@ -49,13 +49,16 @@
 
 .uxapi-text {
     box-shadow: none;
-    resize: none;
-		height: 2em;
-		width: 50em;
+		width:80%;
+		height:100px;
+		resize:both;
 }
 
 .uxapi-textarea {
-	width:80%
+	width:80%;
+	height:100px;
+	resize:both;
+
 }
 
 .ck-editor__editable_inline {
@@ -68,7 +71,7 @@
 
 .uxapigridcontainer {
   display: grid;
-  grid-template-columns: auto auto auto;
+  grid-template-columns: auto auto auto auto;
   background-color: #ffffff;
   padding: 10px;
 }
@@ -80,13 +83,13 @@
   text-align: center;
 }
 
-@media only screen and (max-width : 480px) {
+@media only screen and (max-width : 500px) and (min-width: 1px) {
    /* Smartphone view: 1 tile */
    .uxapigridcontainer {
 		 grid-template-columns: auto;
    }
 }
-@media only screen and (max-width : 650px) and (min-width : 481px) {
+@media only screen and (max-width : 650px) and (min-width : 501px) {
    /* Tablet view: 2 tiles */
 	 .uxapigridcontainer {
 		 grid-template-columns: auto auto;
