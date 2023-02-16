@@ -83,6 +83,20 @@
   text-align: center;
 }
 
+.uxapibuttonitem {
+  padding: 5px;
+  text-align: center;
+	border: 1px solid rgba(0, 0, 0, 0.8);
+	margin:10px;
+	background-color: #333333;
+}
+.uxapibutton-inner {
+	font-size: 18px;
+	color:#FFFFFF;
+	padding:10px;
+}
+
+
 @media only screen and (max-width : 500px) and (min-width: 1px) {
    /* Smartphone view: 1 tile */
    .uxapigridcontainer {

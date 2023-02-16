@@ -1,5 +1,5 @@
 function returnObj(path) {
-    if (typeof(window.sessionStorage.token) != 'undefined') {
+    if (typeof(sessionStorage.token) != 'undefined') {
       refreshToken()
     var obj = $.ajax({
       url: uxapihost + path,
@@ -7,7 +7,7 @@ function returnObj(path) {
       type:'GET',
       dataType: 'text',
       beforeSend: function(xhr) {
-        xhr.setRequestHeader("Authorization", "Bearer " + window.sessionStorage.token)
+        xhr.setRequestHeader("Authorization", "Bearer " + sessionStorage.token)
       },
       success: function(text){
           if(typeof(text.error) != 'undefined') {
@@ -78,7 +78,6 @@ function listObjects(path, listOptions, format) {
 
     var divhead  = `<div class="uxapigridcontainer">`
     if (format == 'tiles') {
-
       if (typeof(obj.object) != 'undefined') {
         msg = msg + divhead
         msg = msg + renderTile(obj, listOptions)
@@ -86,14 +85,24 @@ function listObjects(path, listOptions, format) {
       else {
         msg = msg + divhead
         for (var i = 0; i < obj.objects.length; i++) {
-//          if (parseInt((i+1)/4) == ((i)/4) && i > 0) {
-//              console.log(parseInt(i/4) +" "+ (i/4))
-//              msg = msg + "</div>" + divhead
-//            }
             msg = msg + renderTile(obj.objects[i], listOptions)
           }
         }
       msg = msg + "</div>"
+    }
+    else if (format == 'buttons') {
+      if (typeof(obj.object) != 'undefined') {
+        msg = msg + divhead
+        msg = msg + renderButton(obj, listOptions)
+      }
+      else {
+        msg = msg + divhead
+        for (var i = 0; i < obj.objects.length; i++) {
+            msg = msg + renderButton(obj.objects[i], listOptions)
+          }
+        }
+      msg = msg + "</div>"
+
     }
     else {
       if (typeof(obj.object) != 'undefined') {
@@ -433,7 +442,7 @@ function putObject(path, payload, method) {
     dataType: 'json',
     data: JSON.stringify(payload),
     beforeSend: function(xhr) {
-      xhr.setRequestHeader("Authorization", "Bearer " + window.sessionStorage.token)
+      xhr.setRequestHeader("Authorization", "Bearer " + sessionStorage.token)
     },
     success: function(text){
         if(typeof(text.error) != 'undefined') {
@@ -456,18 +465,19 @@ function delObject(path, objectLabel) {
   var text = ''
   if (path.slice(-1) == '/') {path = path.substring(0, path.length - 1);}
   console.log(path)
-  if (confirm("Are you sure you want to delete " + objectLabel) == true) {
+  if (confirm("Are you sure you want to delete " + objectLabel +`? This will delete this item and any subcollections`) == true) {
 //  if (confirm(text) == true) {
     return $.ajax({
       url: uxapihost + path,
       async: false,
       type:'DELETE',
       beforeSend: function(xhr) {
-        xhr.setRequestHeader("Authorization", "Bearer " + window.sessionStorage.token)
+        xhr.setRequestHeader("Authorization", "Bearer " + sessionStorage.token)
       },
       success: function(text){
           if(typeof(text.error) != 'undefined') {
             console.log(text.error)
+            postObjectCleanup( path, text )
             return text.error
           }
           else {
@@ -778,10 +788,10 @@ function getSubCollections(path) {
 
 function renderTile(obj, listOptions) {
   var msg = ''
-  var imagestyle = "width:100%"
+  var imagestyle = ""
   var tileTemplate = `
   <div class="uxapigriditem clickable" onclick="location.href='fTILETARGET'">
-      <img src="fTILEIMAGE" style="fIMAGESTYLE" /><br/>
+      <img src="fTILEIMAGE" class="uxapi-image-thumb" style="fIMAGESTYLE" /><br/>
       <B>fTILETITLE</B><br/>
       fTILEBLURB
   </div>
@@ -806,7 +816,34 @@ function renderTile(obj, listOptions) {
   tmp = tmp.replace(/fTILETITLE/g, obj.object[listOptions.title])
   tmp = tmp.replace(/fTILEBLURB/g, obj.object[listOptions.blurb])
   tmp = tmp.replace(/fTILEIMAGE/g, obj.object[listOptions.img])
-  tmp = tmp.replace(/IMAGESTYLE/g, imagestyle)
+  tmp = tmp.replace(/fIMAGESTYLE/g, imagestyle)
+  tmp = tmp.replace(/fTILETARGET/g, link)
+  msg = msg + tmp
+  return msg
+}
+
+function renderButton(obj, listOptions) {
+  var msg = ''
+  var imagestyle = ""
+  var buttonTemplate = `
+  <div class="uxapibuttonitem clickable" onclick="location.href='fTILETARGET'">
+      <span class="uxapibutton-inner" />fTILETITLE<span>
+  </div>
+  `
+
+  var tmp = buttonTemplate;
+  var link = listOptions.link
+  for (const [key, value] of Object.entries(obj.object)) {
+    var rE = '{' + key + '}'
+    var rE2 = new RegExp(rE, 'g')
+    link = link.replace(rE2, value)
+  }
+  if (link.includes('{objectID}') == true) {
+    var rE = '{objectID}'
+    var rE2 = new RegExp(rE, 'g')
+    link = link.replace(rE2, obj.objectID)
+  }
+  tmp = tmp.replace(/fTILETITLE/g, obj.object[listOptions.title])
   tmp = tmp.replace(/fTILETARGET/g, link)
   msg = msg + tmp
   return msg
@@ -831,7 +868,7 @@ function renderList(obj, listOptions, fieldclasses) {
   if (obj.object[listOptions.img].length == 0 ) {try{obj.object[listOptions.img] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAQAIBRAA7"}catch{}}
   msg = msg + `<p><a href="` + link + `"><b>` + obj.object[listOptions.title] + `</b></A><br/>`
   msg = msg + `<img src="` + obj.object[listOptions.img] + `" class='uxapilistimg'  alt="` + obj.object[listOptions.title] + `">`
-  msg = msg  + `<span class="` + fieldclasses[listOptions.blurb].class + `">` + obj.object[listOptions.blurb] + `</span> <br style="clear: both;" /></p>`
+  msg = msg  + `<span class="` + `">` + obj.object[listOptions.blurb] + `</span> <br style="clear: both;" /></p>`
   return msg
 }
 
@@ -853,7 +890,7 @@ function refreshToken() {
         }
         else {
           text = JSON.parse(text)
-          window.sessionStorage.token = text.access_token
+          sessionStorage.token = text.access_token
           window.sessionStorage.refresh = text.refresh_token
         }
     },
@@ -904,7 +941,7 @@ function uxapilogin() {
         try{
           var json = JSON.parse(text)
           if (typeof(json.access_token) != 'undefined') {
-            window.sessionStorage.token = json.access_token
+            sessionStorage.token = json.access_token
             window.sessionStorage.refresh = json.refresh_token
             window.location.href = window.location.href
           }
@@ -930,8 +967,8 @@ function uxapilogin() {
 function ckEditor(id) {
     ClassicEditor
       .create( document.querySelector( '#' + id ), {
-        plugin: ['Markdown', 'Base64UploadAdapter'],
-       licenseKey: '',
+//        plugin: ['Markdown', 'Base64UploadAdapter'],
+//       licenseKey: '',
        config: { height: '800px', fontFamily: 'Arial, Helvetica, sans-serif'},
       } )
       .then( editor => {
@@ -944,4 +981,89 @@ function ckEditor(id) {
   },
  );
 
+}
+
+
+function otpLogin(redir) {
+  var queryparams = location.search
+  queryparams = queryparams.substring(1)
+  var tmp = queryparams.split('&')
+  qp = {}
+  for (var i =0; i < tmp.length; i++) {
+    var tmp2 = tmp[i].split('=')
+    qp[tmp2[0]] = tmp2[1]
+  }
+  var token = getTokenFromCode(qp.code)
+  console.log(typeof(token))
+  if (token == 'undefined') {
+    sessionStorage.clear();
+    return  `<Br /><h3>Something went wrong</h3><p>Sorry but the code provided did not work. Please return to the <a href="/dashboard">login page</a> and try again</p>`
+  }
+  else {
+    window.location.href = redir
+  }
+}
+function generateCode(div) {
+  var token = login(clientID, clientSecret)
+  token = window.sessionStorage.token
+  sessionStorage.clear();
+  console.log(token)
+  var payload = {}
+  payload.email = document.getElementById("userid").value;
+  payload = JSON.stringify(payload)
+  var path = uxapihost + '/v1/uxapi/requestotp'
+  var response = $.ajax({
+    url: path,
+    async: false,
+    type:'POST',
+    dataType: 'json',
+    contentType: 'application/json',
+    data: payload,
+    beforeSend: function(xhr) {
+        xhr.setRequestHeader("Authorization", "Bearer "+ token);
+    },
+    success: function(text){
+        if(typeof(text.error) != 'undefined') {
+          console.log(text.error)
+        }
+        else {
+          var msg = `<h3>Email Sent</h3>`
+          msg = msg + '<p>' + text.msg + '</p>'
+          document.getElementById(div).innerHTML = msg
+        }
+    },
+    error: function(err) {
+        console.log(err)
+    }
+  });
+}
+
+function getTokenFromCode(code) {
+  var payload = `grant_type=authorization_code&code=` + code
+    var response = $.ajax({
+    url: uxapihost + '/v1/uxapi/tokens/create',
+    async: false,
+    type:'POST',
+    dataType: 'text',
+    data: payload,
+    contentType: 'application/x-www-form-urlencoded',
+    beforeSend: function(xhr) {
+      xhr.setRequestHeader("Authorization", "Basic "+ btoa(clientID + ':' + clientSecret));
+    },
+    success: function(text){
+        if(typeof(text.error) != 'undefined') {
+          return "error"
+        }
+        else {
+          text = JSON.parse(text)
+          window.sessionStorage.token = text.access_token
+          window.sessionStorage.refresh = text.refresh_token
+          return text.access_token
+        }
+    },
+    error: function(err) {
+        console.log(err)
+    }
+  });
+  return window.sessionStorage.token;
 }

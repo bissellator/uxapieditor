@@ -97,7 +97,10 @@ document.write(listObjects('/v1/blogcategories', {
   ```
 
   **format:**
-`tiles` will return the results in a 4 column grid. `list` will return the results in a page of text with the image (if any) aligned right.  
+
+* `tiles` will return the results in a 4 column grid.
+* `list` will return the results in a page of text with the image (if any) aligned right.
+* `buttons` will return the results as clickable buttons  
 
 ---
 
